@@ -1,0 +1,11 @@
+<component name="libraryTable">
+  <library name="Gradle: org.biojava:biojava3-core:3.0">
+    <CLASSES>
+      <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/org.biojava/biojava3-core/3.0/6190a068fe428aa3a4e0dde72cdccc8673b376c5/biojava3-core-3.0.jar!/" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES>
+      <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/org.biojava/biojava3-core/3.0/420c0b1055b455b241e9f03e9d786b91e9709c84/biojava3-core-3.0-sources.jar!/" />
+    </SOURCES>
+  </library>
+</component>

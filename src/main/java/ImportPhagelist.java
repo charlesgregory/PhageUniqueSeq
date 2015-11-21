@@ -1,11 +1,9 @@
+import javafx.util.Pair;
 import org.apache.commons.io.FileUtils;
 
 import java.io.*;
 import java.net.URL;
-import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 import java.util.stream.Collectors;
 import java.io.InputStreamReader;
 
@@ -18,9 +16,7 @@ public class ImportPhagelist {
     List<String> allPhages;
     ImportPhagelist() throws IOException {
         String path =Download();
-        full = readFile(path);
-        clusters = clusterList(full);
-        allPhages = phageNames(full);
+        this.full = readFile(path);
 
     }
     public List<String[]> readFile(String path1) throws IOException {
@@ -32,17 +28,15 @@ public class ImportPhagelist {
         } catch (FileNotFoundException e) {
             e.printStackTrace();
         }
-        List<String[]> remove = new ArrayList<>();
-        int i =0;
-        for(String[] x:lines){
-            if(!(x[1].equals("Mycobacterium smegmatis mc²155"))){
-                remove.add(x);
-            }
-        }
-        for(String[] x:remove){
-            lines.remove(lines.indexOf(x));
-        }
-        return lines;
+        List<String[]> collect = lines.stream().filter(x -> x[1].equals("Mycobacterium smegmatis mc²155"))
+                .map(x -> {
+                    String[] r = new String[2];
+                    r[0] =x[2];
+                    r[1]=x[0];
+                    return r;
+                }
+                ).collect(Collectors.toList());
+        return collect;
     }
     public static String Download() throws IOException {
         String path = "http://phagesdb.org/data/?set=seq&type=full";
@@ -53,20 +47,20 @@ public class ImportPhagelist {
         FileUtils.copyURLToFile(netPath, file);
         return file.toString();
     }
-    public List<String> clusterList(List<String[]> all){
-        List<String> clu = new ArrayList<>();
-        for(String[] x : all){
-            clu.add(x[2]);
-        }
-        Set<String> clust =new HashSet<String>(clu);
-        List<String> cluster = new ArrayList<String>(clust);
-        return cluster;
-    }
-    public List<String> phageNames(List<String[]> all){
-        List<String> phages = new ArrayList<>();
-        for(String[] x:all){
-            phages.add(x[0]);
-        }
-        return phages;
-    }
+//    public List<String> clusterList(List<String[]> all){
+//        List<String> clu = new ArrayList<>();
+//        for(String[] x : all){
+//            clu.add(x[2]);
+//        }
+//        Set<String> clust =new HashSet<String>(clu);
+//        List<String> cluster = new ArrayList<String>(clust);
+//        return cluster;
+//    }
+//    public List<String> phageNames(List<String[]> all){
+//        List<String> phages = new ArrayList<>();
+//        for(String[] x:all){
+//            phages.add(x[0]);
+//        }
+//        return phages;
+//    }
 }

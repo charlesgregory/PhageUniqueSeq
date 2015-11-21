@@ -12,7 +12,7 @@ public class Test{
     public static void main(String[] args)throws IOException {
         ImportPhagelist list = new ImportPhagelist();
         Cluster c = new Cluster(list);
-        HashMap d = c.assignClusters();
+        Map d = c.assignClusters();
         System.out.println(d.get("A1"));
 //        List<Fasta> fastas = new ArrayList<>();
 //        List<Fasta> fastas = list.allPhages.parallelStream().map((x) -> {

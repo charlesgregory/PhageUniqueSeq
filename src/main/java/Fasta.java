@@ -13,12 +13,7 @@ import java.util.stream.IntStream;
  * Created by musta_000 on 11/6/2015.
  */
 public class Fasta {
-    Set<String> prims;
-    String seq;
-    int bp;
-    Fasta(String name, int bps){
-        bp = bps;
-    }
+
     public String parse(String path){
         String seq1 = null;
         try{
@@ -34,7 +29,7 @@ public class Fasta {
         }
         return seq1;
     }
-    public Set<String> splitFasta(String seq, int length){
+    public static Set<String> splitFasta(String seq, int length){
 
         String[] prim = new String[seq.length()-length];
         Set<String> collect = IntStream.range(0, length).mapToObj(start -> {
@@ -70,10 +65,10 @@ public class Fasta {
         FileUtils.copyURLToFile(netPath,file);
         return file.toString();
     }
-    public Set<String> process(String name) throws IOException {
+    public static Set<String> process(String name, int bps) throws IOException {
         String path = Download(name);
-        seq = parse(path);
-        prims = splitFasta(seq,bp);
+        String seq = parse(path);
+        Set<String> prims = splitFasta(seq, bps);
         return prims;
     }
 }

@@ -14,34 +14,48 @@ import java.util.stream.IntStream;
  */
 public class Fasta {
 
-    public String parse(String path){
+    public static String[] parse(String path){
         String seq1 = null;
+        String seq2 = null;
+        String[] r = new String[2];
         try{
             LinkedHashMap<String, DNASequence> f = FastaReaderHelper.readFastaDNASequence(new File(path));
             List<String> dnaList = new ArrayList<>(1);
             for (Map.Entry<String, DNASequence> stringDNASequenceEntry : f.entrySet()) {
                 dnaList.add(stringDNASequenceEntry.getValue().getSequenceAsString());
+                dnaList.add(stringDNASequenceEntry.getValue()
+                        .getReverseComplement().getSequenceAsString());
             }
             seq1 = dnaList.get(0);
+            seq2 = dnaList.get(1);
+            r[0] = seq1;
+            r[1] = seq2;
         }
         catch (java.lang.Exception e){
             System.out.print(e);
         }
-        return seq1;
+        return r;
     }
-    public static Set<String> splitFasta(String seq, int length){
+    public static Set<String> splitFasta(String[] seq, int length){
 
-        String[] prim = new String[seq.length()-length];
         Set<String> collect = IntStream.range(0, length).mapToObj(start -> {
             List<String> primers = new ArrayList<>();
-            for (int i = start; i < seq.length() - length; i += length) {
-                primers.add(seq.substring(i, i + length));
+            for (int i = start; i < seq[0].length() - length; i += length) {
+                primers.add(seq[0].substring(i, i + length));
             }
             return primers;
         }).flatMap((i) -> i.stream()).collect(Collectors.toSet());
+        Set<String> collect2 = IntStream.range(0, length).mapToObj(start -> {
+            List<String> primers = new ArrayList<>();
+            for (int i = start; i < seq[1].length() - length; i += length) {
+                primers.add(seq[1].substring(i, i + length));
+            }
+            return primers;
+        }).flatMap((i) -> i.stream()).collect(Collectors.toSet());
+        collect.addAll(collect2);
         return collect;
     }
-    public static String Download(String name) throws IOException {
+    public static String Download(String name) {
         String path;
         if(name.equals("BrownCNA")){
             path ="http://phagesdb.org/media/fastas/Browncna.fasta";
@@ -61,13 +75,17 @@ public class Fasta {
         String base = new File("").getAbsolutePath();
         name = base+"\\src\\main\\java\\Fastas\\"+name+".fasta";
         File file = new File(name);
-        URL netPath = new URL(path);
-        FileUtils.copyURLToFile(netPath,file);
+        try {
+            URL netPath = new URL(path);
+            FileUtils.copyURLToFile(netPath,file);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
         return file.toString();
     }
-    public static Set<String> process(String name, int bps) throws IOException {
+    public static Set<String> process(String name, int bps){
         String path = Download(name);
-        String seq = parse(path);
+        String[] seq = parse(path);
         Set<String> prims = splitFasta(seq, bps);
         return prims;
     }

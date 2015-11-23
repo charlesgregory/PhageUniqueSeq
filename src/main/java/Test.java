@@ -14,6 +14,8 @@ public class Test{
         Cluster c = new Cluster(list);
         Set<Set<String>> d = c.assignClusters();
         System.out.println(d.size());
+        Set<Set<String>> f =c.unique(d);
+        System.out.println(f.size());
 //        List<Fasta> fastas = new ArrayList<>();
 //        List<Fasta> fastas = list.allPhages.parallelStream().map((x) -> {
 //            Fasta seq2 = null;

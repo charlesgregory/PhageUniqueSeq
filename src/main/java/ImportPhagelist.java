@@ -30,10 +30,18 @@ public class ImportPhagelist {
         }
         List<String[]> collect = lines.stream().filter(x -> x[1].equals("Mycobacterium smegmatis mc²155"))
                 .map(x -> {
-                    String[] r = new String[2];
-                    r[0] =x[2];
-                    r[1]=x[0];
-                    return r;
+                    if(x[2]=="Singleton"){
+                        String[] r = new String[2];
+                        r[0] = x[0];
+                        r[1] = x[0];
+                        return r;
+                    }
+                    else{
+                                String[] r = new String[2];
+                                r[0] = x[2];
+                                r[1] = x[0];
+                                return r;
+                            }
                 }
                 ).collect(Collectors.toList());
         return collect;

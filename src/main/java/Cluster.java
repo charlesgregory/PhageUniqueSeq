@@ -14,7 +14,7 @@ public class Cluster {
     public Set<Set<String>> assignClusters(){
         Map<String, List<String[]>> collect = list.full.stream()
                 .collect(Collectors.groupingBy(l -> l[0]));
-        Set<Set<String>> clusters = collect.entrySet().stream()
+        Set<Set<String>> clusters = collect.entrySet().parallelStream()
                 .map(x -> {
                             List<String> mapEntryValues = getPhageNames(x);
                             String firstName = mapEntryValues.get(0);

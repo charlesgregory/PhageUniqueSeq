@@ -1,3 +1,5 @@
+import javafx.util.Pair;
+
 import java.io.File;
 import java.io.IOException;
 import java.util.*;
@@ -9,23 +11,10 @@ import java.util.stream.Stream;
  */
 
 public class Test{
+    //Used for testing classes
     public static void main(String[] args)throws IOException {
-        ImportPhagelist list = new ImportPhagelist();
-        Cluster c = new Cluster(list);
-        Set<Set<String>> d = c.assignClusters();
-        System.out.println(d.size());
-        Set<Set<String>> f =c.unique(d);
+        Cluster c = new Cluster();
+        List<Pair<String, Set<String>>> f =c.unique(c.assignClusters());
         System.out.println(f.size());
-//        List<Fasta> fastas = new ArrayList<>();
-//        List<Fasta> fastas = list.allPhages.parallelStream().map((x) -> {
-//            Fasta seq2 = null;
-//            try {
-//                return new Fasta(x, 15);
-//            } catch (IOException e) {
-//                e.printStackTrace();
-//            }
-//            return seq2;
-//        }).collect(Collectors.toList());
-//        System.out.println(fastas.toString());
     }
 }

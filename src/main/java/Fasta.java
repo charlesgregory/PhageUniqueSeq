@@ -11,9 +11,11 @@ import java.util.stream.IntStream;
 
 /**
  * Created by musta_000 on 11/6/2015.
+ * Controls the fasta files. This class can download fasta files from phagesdb.org
+ * using the phagelist. It can also parse the fasta sequence and split the fasta into pieces.
  */
 public class Fasta {
-
+    //Reads fasta sequence
     public static String[] parse(String path){
         String seq1 = null;
         String seq2 = null;
@@ -36,6 +38,9 @@ public class Fasta {
         }
         return r;
     }
+    /**Splits the fasta sequence into a set of every possible
+    //sequence of a certain size which can be found in the sequence
+    including the reverse strand*/
     public static Set<String> splitFasta(String[] seq, int length){
 
         Set<String> collect = IntStream.range(0, length).mapToObj(start -> {
@@ -55,6 +60,7 @@ public class Fasta {
         collect.addAll(collect2);
         return collect;
     }
+    //Downloads the fasta files from phagesdb.org based off the name of the phage
     public static String Download(String name) {
         String path;
         if(name.equals("BrownCNA")){
@@ -83,10 +89,25 @@ public class Fasta {
         }
         return file.toString();
     }
+    //processes a phage based off name by downloading, parsing, and splitting it
     public static Set<String> process(String name, int bps){
         String path = Download(name);
         String[] seq = parse(path);
         Set<String> prims = splitFasta(seq, bps);
         return prims;
+    }
+    /**Processes all phages except those in a specified cluster
+    used to make generation of unique sequences easier*/
+    public static List<Set<String>> processAll(ImportPhagelist list, String cluster,int bps){
+        List<Set<String>> listFastaSet = new ArrayList<>();
+        list.full.stream().forEach(x-> {
+            Set<String> fastaSet = new HashSet<>();
+            if(x[0].equals(cluster)){}
+            else{
+                fastaSet = process(x[1],bps);
+                listFastaSet.add(fastaSet);
+            }
+        });
+        return listFastaSet;
     }
 }

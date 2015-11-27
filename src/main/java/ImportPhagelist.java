@@ -1,4 +1,3 @@
-import javafx.util.Pair;
 import org.apache.commons.io.FileUtils;
 
 import java.io.*;
@@ -9,16 +8,17 @@ import java.io.InputStreamReader;
 
 /**
  * Created by musta_000 on 11/10/2015.
+ * Controls the import of the mycobacterium smegmatis phage list
+ * from phagesdb.org
  */
 public class ImportPhagelist {
     List<String[]> full;
-    List<String> clusters;
-    List<String> allPhages;
     ImportPhagelist() throws IOException {
         String path =Download();
         this.full = readFile(path);
 
     }
+    //parses phagelist tsv file and preselects only mycobacterium smegmatis phages
     public List<String[]> readFile(String path1) throws IOException {
         String cvsSplitBy = "\\t";
         List<String[]> lines = null;
@@ -30,7 +30,7 @@ public class ImportPhagelist {
         }
         List<String[]> collect = lines.stream().filter(x -> x[1].equals("Mycobacterium smegmatis mc²155"))
                 .map(x -> {
-                    if(x[2]=="Singleton"){
+                    if(x[2].equals("Singleton")){
                         String[] r = new String[2];
                         r[0] = x[0];
                         r[1] = x[0];
@@ -46,6 +46,7 @@ public class ImportPhagelist {
                 ).collect(Collectors.toList());
         return collect;
     }
+    //Downloads phagelist file from phagesdb.org
     public static String Download() throws IOException {
         String path = "http://phagesdb.org/data/?set=seq&type=full";
         String base = new File("").getAbsolutePath();
@@ -55,20 +56,4 @@ public class ImportPhagelist {
         FileUtils.copyURLToFile(netPath, file);
         return file.toString();
     }
-//    public List<String> clusterList(List<String[]> all){
-//        List<String> clu = new ArrayList<>();
-//        for(String[] x : all){
-//            clu.add(x[2]);
-//        }
-//        Set<String> clust =new HashSet<String>(clu);
-//        List<String> cluster = new ArrayList<String>(clust);
-//        return cluster;
-//    }
-//    public List<String> phageNames(List<String[]> all){
-//        List<String> phages = new ArrayList<>();
-//        for(String[] x:all){
-//            phages.add(x[0]);
-//        }
-//        return phages;
-//    }
 }

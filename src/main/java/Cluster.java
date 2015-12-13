@@ -66,17 +66,7 @@ public class Cluster {
                 .collect(toList());
     }
     //creates unique sequences for all clusters using the common
-    public Map<String, Set<CharSequence>> unique(Map<String, Set<CharSequence>> common){
-        Map<String, Set<CharSequence>> unique;
-        unique = common.entrySet().parallelStream().map(x-> {
-            Set<CharSequence> s = x.getValue();
-            s.removeAll(Fasta.processAll(list,x.getKey(),bps));
-            System.out.println(x.getKey() + " done");
-            return new Pair<>(x.getKey(),s);
-        }).collect(Collectors.toMap(pair -> pair.getKey(), s-> s.getValue()));
-        return unique;
-    }
-    public void unique2(){
+    public void unique(){
         File[] files1 = new File(base+"\\src\\main\\java\\Common\\").listFiles();
         List<File> commonFiles = new ArrayList<>();
         for(File x: files1){commonFiles.add(x);}

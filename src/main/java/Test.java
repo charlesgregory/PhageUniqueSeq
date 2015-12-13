@@ -13,8 +13,7 @@ import java.util.stream.Stream;
 public class Test{
     //Used for testing classes
     public static void main(String[] args)throws IOException {
-        Cluster c = new Cluster();
-        List<Pair<String, Set<String>>> f =c.unique(c.assignClusters());
-        System.out.println(f.size());
+        Cluster c = new Cluster(15);
+        c.unique2();
     }
 }

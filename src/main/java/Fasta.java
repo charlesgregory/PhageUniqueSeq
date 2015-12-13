@@ -41,19 +41,21 @@ public class Fasta {
     /**Splits the fasta sequence into a set of every possible
     //sequence of a certain size which can be found in the sequence
     including the reverse strand*/
-    public static Set<String> splitFasta(String[] seq, int length){
+    public static Set<CharSequence> splitFasta(String[] seq, int length){
 
-        Set<String> collect = IntStream.range(0, length).mapToObj(start -> {
-            List<String> primers = new ArrayList<>();
+        Set<CharSequence> collect = IntStream.range(0, length).mapToObj(start -> {
+            List<CharSequence> primers = new ArrayList<>();
             for (int i = start; i < seq[0].length() - length; i += length) {
-                primers.add(seq[0].substring(i, i + length));
+                CharSequence s = seq[0].substring(i, i + length);
+                primers.add(s);
             }
             return primers;
         }).flatMap((i) -> i.stream()).collect(Collectors.toSet());
-        Set<String> collect2 = IntStream.range(0, length).mapToObj(start -> {
-            List<String> primers = new ArrayList<>();
+        Set<CharSequence> collect2 = IntStream.range(0, length).mapToObj(start -> {
+            List<CharSequence> primers = new ArrayList<>();
             for (int i = start; i < seq[1].length() - length; i += length) {
-                primers.add(seq[1].substring(i, i + length));
+                CharSequence s = seq[0].substring(i, i + length);
+                primers.add(s);
             }
             return primers;
         }).flatMap((i) -> i.stream()).collect(Collectors.toSet());
@@ -90,22 +92,20 @@ public class Fasta {
         return file.toString();
     }
     //processes a phage based off name by downloading, parsing, and splitting it
-    public static Set<String> process(String name, int bps){
+    public static Set<CharSequence> process(String name, int bps){
         String path = Download(name);
         String[] seq = parse(path);
-        Set<String> prims = splitFasta(seq, bps);
+        Set<CharSequence> prims = splitFasta(seq, bps);
         return prims;
     }
     /**Processes all phages except those in a specified cluster
     used to make generation of unique sequences easier*/
-    public static List<Set<String>> processAll(ImportPhagelist list, String cluster,int bps){
-        List<Set<String>> listFastaSet = new ArrayList<>();
+    public static Set<CharSequence> processAll(ImportPhagelist list, String cluster, int bps){
+        Set<CharSequence> listFastaSet = new HashSet<>();
         list.full.stream().forEach(x-> {
-            Set<String> fastaSet = new HashSet<>();
             if(x[0].equals(cluster)){}
             else{
-                fastaSet = process(x[1],bps);
-                listFastaSet.add(fastaSet);
+                listFastaSet.addAll(process(x[1],bps));
             }
         });
         return listFastaSet;

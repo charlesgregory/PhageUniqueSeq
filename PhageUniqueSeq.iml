@@ -11,6 +11,10 @@
       <sourceFolder url="file://$MODULE_DIR$/src/test/resources" type="java-test-resource" />
       <excludeFolder url="file://$MODULE_DIR$/.gradle" />
       <excludeFolder url="file://$MODULE_DIR$/build" />
+      <excludeFolder url="file://$MODULE_DIR$/src/main/java/Common" />
+      <excludeFolder url="file://$MODULE_DIR$/src/main/java/Fastas" />
+      <excludeFolder url="file://$MODULE_DIR$/src/main/java/PhageData" />
+      <excludeFolder url="file://$MODULE_DIR$/src/main/java/Unique" />
     </content>
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />

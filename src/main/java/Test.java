@@ -1,37 +1,29 @@
-import javafx.util.Pair;
 
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.io.File;
 import java.io.IOException;
-import java.util.*;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 /**
- * Created by musta_000 on 11/5/2015.
+ * Created by Charles Gregory on 11/5/2015.
  */
 
 public class Test{
 
     private static class Phages implements ActionListener{
         public void actionPerformed(ActionEvent e){
-            Cluster c = new Cluster(15);
-            c.allPhages();
+            Cluster.allPhages(15);
         }
     }
     private static class Common implements ActionListener{
         public void actionPerformed(ActionEvent e){
-            Cluster c = new Cluster(15);
-            c.assignClusters();
+            Cluster.assignClusters();
         }
     }
     private static class Unique implements ActionListener{
         public void actionPerformed(ActionEvent e){
-            Cluster c = new Cluster(15);
-            c.unique();
+            Cluster.unique();
         }
     }
     //Used for testing classes

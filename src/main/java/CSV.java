@@ -1,14 +1,13 @@
-import java.io.File;
-import java.io.FileWriter;
-import java.io.IOException;
+import java.io.*;
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.Set;
 
 /**
- * Created by Thomas on 12/8/2015.
+ * Created by Charles Gregory on 12/8/2015.
  */
-public class CSVOut {
+public class CSV {
     private static final String COMMA_DELIMITER = ",";
-    private static final String NEW_LINE_SEPARATOR = "\n";
     public static void writeCommonCSV(String s,Set<CharSequence> data) throws IOException {
         String base = new File("").getAbsolutePath();
         FileWriter fileWriter = new FileWriter(base+"\\src\\main\\java\\Common\\"+s+".csv");
@@ -50,5 +49,34 @@ public class CSVOut {
         });
         fileWriter.flush();
         fileWriter.close();
+    }
+    public static Set<CharSequence> readCSV(String path1){
+        BufferedReader br = null;
+        String line;
+        String cvsSplitBy = ",";
+        CharSequence[] prim =null;
+        try {
+            br = new BufferedReader( new FileReader(path1));
+            while ((line = br.readLine()) != null) {
+
+                prim = line.split(cvsSplitBy);
+            }
+        }
+        catch (FileNotFoundException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        } finally {
+            if (br != null) {
+                try {
+                    br.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+        Set<CharSequence> s = new HashSet<>();
+        Collections.addAll(s, prim);
+        return s;
     }
 }

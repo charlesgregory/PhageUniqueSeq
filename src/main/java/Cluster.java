@@ -7,26 +7,22 @@ import java.util.*;
 import java.util.stream.Collectors;
 import static java.util.stream.Collectors.toList;
 /**
- * Created by musta_000 on 11/17/2015.
+ * Created by Charles Gregory on 11/17/2015.
  * Manages the cluster operations. Takes all phages from the phage list
  * and can perform determination of all common sequences and all unique sequences
  */
 public class Cluster {
-    String base = new File("").getAbsolutePath();
-    int bps;
-    ImportPhagelist list;
-    Cluster(int bp){
-        bps=bp;
+
+    public static void allPhages(int bps){
+        ImportPhagelist list = null;
         try {
-            list =new ImportPhagelist();
+            list = ImportPhagelist.getInstance();
         } catch (IOException e) {
             e.printStackTrace();
         }
-    }
-    public void allPhages(){
         list.full.forEach(x->{
             try {
-                CSVOut.writeDataCSV(x[1],Fasta.splitFasta(Fasta.parse(Fasta.Download(x[1])),bps));
+                CSV.writeDataCSV(x[1],Fasta.process(x[1],bps));
             } catch (IOException e) {
                 e.printStackTrace();
             }
@@ -34,17 +30,24 @@ public class Cluster {
         System.out.println("Phages Processed");
     }
     //Creates common sequences set for all clusters
-    public void assignClusters(){
+    public static void assignClusters(){
+        String base = new File("").getAbsolutePath();
+        ImportPhagelist list = null;
+        try {
+            list = ImportPhagelist.getInstance();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
         Map<String, List<String[]>> collect = list.full.stream()
             .collect(Collectors.groupingBy(l -> l[0]));
         Map<String, Set<CharSequence>> clusters = collect.entrySet().parallelStream()
             .map(x -> {
                 List<String> mapEntryValues = getPhageNames(x);
                 String firstName = mapEntryValues.get(0);
-                Set<CharSequence> clusterSet = ImportCSV.readFile(base+"\\src\\main\\java\\PhageData\\"+firstName+".csv");
+                Set<CharSequence> clusterSet = CSV.readCSV(base+"\\src\\main\\java\\PhageData\\"+firstName+".csv");
 
                 x.getValue().stream().skip(1).forEach(y -> {
-                    clusterSet.retainAll(ImportCSV.readFile(base+"\\src\\main\\java\\PhageData\\"+y[1]+".csv"));
+                    clusterSet.retainAll(CSV.readCSV(base+"\\src\\main\\java\\PhageData\\"+y[1]+".csv"));
 
                         }
                 );
@@ -52,7 +55,7 @@ public class Cluster {
             }).collect(Collectors.toMap(pair -> pair.getKey(), s-> s.getValue()));
         clusters.entrySet().forEach(x -> {
             try {
-                CSVOut.writeCommonCSV(x.getKey(), x.getValue());
+                CSV.writeCommonCSV(x.getKey(), x.getValue());
             } catch (IOException e) {
                 e.printStackTrace();
             }
@@ -66,7 +69,14 @@ public class Cluster {
                 .collect(toList());
     }
     //creates unique sequences for all clusters using the common
-    public void unique(){
+    public static void unique(){
+        String base = new File("").getAbsolutePath();
+        ImportPhagelist list = null;
+        try {
+            list = ImportPhagelist.getInstance();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
         File[] files1 = new File(base+"\\src\\main\\java\\Common\\").listFiles();
         List<File> commonFiles = new ArrayList<>();
         for(File x: files1){commonFiles.add(x);}
@@ -76,7 +86,7 @@ public class Cluster {
         Map<String, List<String[]>> collect = list.full.stream()
                 .collect(Collectors.groupingBy(l -> l[0]));
         commonFiles.parallelStream().forEach(x-> {
-            Set<CharSequence> common = ImportCSV.readFile(x.getAbsolutePath());
+            Set<CharSequence> common = CSV.readCSV(x.getAbsolutePath());
             String cluster = x.getAbsolutePath().substring(x.getAbsolutePath().indexOf("on\\") + 3,
                     x.getAbsolutePath().indexOf(".csv"));
             Set<String> clusterPhages = collect.get(cluster).stream().map(z -> z[1]).collect(Collectors.toSet());
@@ -85,12 +95,12 @@ public class Cluster {
                         y.getAbsolutePath().indexOf(".csv"));
                 if (clusterPhages.contains(phage)) {
                 } else {
-                    common.removeAll(ImportCSV.readFile(y.getAbsolutePath()));
+                    common.removeAll(CSV.readCSV(y.getAbsolutePath()));
                 }
             });
 
             try {
-                CSVOut.writeUniqueCSV(cluster,common);
+                CSV.writeUniqueCSV(cluster,common);
             } catch (IOException e) {
                 e.printStackTrace();
             }

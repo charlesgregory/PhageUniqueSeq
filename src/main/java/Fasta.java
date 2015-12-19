@@ -10,7 +10,7 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 /**
- * Created by musta_000 on 11/6/2015.
+ * Created by Charles Gregory on 11/6/2015.
  * Controls the fasta files. This class can download fasta files from phagesdb.org
  * using the phagelist. It can also parse the fasta sequence and split the fasta into pieces.
  */
@@ -97,17 +97,5 @@ public class Fasta {
         String[] seq = parse(path);
         Set<CharSequence> prims = splitFasta(seq, bps);
         return prims;
-    }
-    /**Processes all phages except those in a specified cluster
-    used to make generation of unique sequences easier*/
-    public static Set<CharSequence> processAll(ImportPhagelist list, String cluster, int bps){
-        Set<CharSequence> listFastaSet = new HashSet<>();
-        list.full.stream().forEach(x-> {
-            if(x[0].equals(cluster)){}
-            else{
-                listFastaSet.addAll(process(x[1],bps));
-            }
-        });
-        return listFastaSet;
     }
 }

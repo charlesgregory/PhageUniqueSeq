@@ -6,5 +6,5 @@ The program's eventual design will be to create unique sequences of a certain si
 all mycobacteriophage clusters for the purpose of using these as biological
 identifiers of cluster status.
 
-The program has a simple gui and requires an internet connection. It also requires that
-within the src/main/java/ there be a folder named "Common", "Fastas", "PhageData", and "Unique".
+The program has a simple gui and requires an internet connection. It can be compiled
+into a .jar file using the included manifest.

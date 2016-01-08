@@ -12,7 +12,7 @@ import static java.util.stream.Collectors.toList;
  * and can perform determination of all common sequences and all unique sequences
  */
 public class Cluster {
-
+    //Creates primer data for each phage
     public static void allPhages(int bps){
         ImportPhagelist list = null;
         try {
@@ -20,6 +20,11 @@ public class Cluster {
         } catch (IOException e) {
             e.printStackTrace();
         }
+        String base = new File("").getAbsolutePath();
+        File file = new File(base+"\\PhageData");
+        CSV.makeDirectory(file);
+        int count = 0;
+        System.out.println(list.full.isEmpty());
         list.full.forEach(x->{
             try {
                 CSV.writeDataCSV(x[1],Fasta.process(x[1],bps));
@@ -29,10 +34,14 @@ public class Cluster {
         });
         System.out.println("Phages Processed");
     }
-    //Creates common sequences set for all clusters
+    /*Creates common sequences for each cluster using
+    phage data from the data created from the allPhages method
+     */
     public static void assignClusters(){
         String base = new File("").getAbsolutePath();
         ImportPhagelist list = null;
+        File file = new File(base+"\\Common");
+        CSV.makeDirectory(file);
         try {
             list = ImportPhagelist.getInstance();
         } catch (IOException e) {
@@ -44,10 +53,10 @@ public class Cluster {
             .map(x -> {
                 List<String> mapEntryValues = getPhageNames(x);
                 String firstName = mapEntryValues.get(0);
-                Set<CharSequence> clusterSet = CSV.readCSV(base+"\\src\\main\\java\\PhageData\\"+firstName+".csv");
+                Set<CharSequence> clusterSet = CSV.readCSV(base+"\\PhageData\\"+firstName+".csv");
 
                 x.getValue().stream().skip(1).forEach(y -> {
-                    clusterSet.retainAll(CSV.readCSV(base+"\\src\\main\\java\\PhageData\\"+y[1]+".csv"));
+                    clusterSet.retainAll(CSV.readCSV(base+"\\PhageData\\"+y[1]+".csv"));
 
                         }
                 );
@@ -71,16 +80,18 @@ public class Cluster {
     //creates unique sequences for all clusters using the common
     public static void unique(){
         String base = new File("").getAbsolutePath();
+        File file = new File(base+"\\Unique");
+        CSV.makeDirectory(file);
         ImportPhagelist list = null;
         try {
             list = ImportPhagelist.getInstance();
         } catch (IOException e) {
             e.printStackTrace();
         }
-        File[] files1 = new File(base+"\\src\\main\\java\\Common\\").listFiles();
+        File[] files1 = new File(base+"\\Common\\").listFiles();
         List<File> commonFiles = new ArrayList<>();
         for(File x: files1){commonFiles.add(x);}
-        File[] files2 = new File(base+"\\src\\main\\java\\PhageData\\").listFiles();
+        File[] files2 = new File(base+"\\PhageData\\").listFiles();
         List<File> phageFiles = new ArrayList<>();
         for(File x: files2){phageFiles.add(x);}
         Map<String, List<String[]>> collect = list.full.stream()

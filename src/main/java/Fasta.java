@@ -41,7 +41,7 @@ public class Fasta {
     /**Splits the fasta sequence into a set of every possible
     //sequence of a certain size which can be found in the sequence
     including the reverse strand*/
-    public static Set<CharSequence> splitFasta(String[] seq, int length){
+    private static Set<CharSequence> splitFasta(String[] seq, int length){
 
         Set<CharSequence> collect = IntStream.range(0, length).mapToObj(start -> {
             List<CharSequence> primers = new ArrayList<>();
@@ -63,7 +63,7 @@ public class Fasta {
         return collect;
     }
     //Downloads the fasta files from phagesdb.org based off the name of the phage
-    public static String Download(String name) {
+    private static String Download(String name) {
         String path;
         if(name.equals("BrownCNA")){
             path ="http://phagesdb.org/media/fastas/Browncna.fasta";
@@ -81,7 +81,7 @@ public class Fasta {
             path = "http://phagesdb.org/media/fastas/"+name+".fasta";
         }
         String base = new File("").getAbsolutePath();
-        name = base+"\\src\\main\\java\\Fastas\\"+name+".fasta";
+        name = base+"\\Fastas\\"+name+".fasta";
         File file = new File(name);
         try {
             URL netPath = new URL(path);
@@ -95,7 +95,6 @@ public class Fasta {
     public static Set<CharSequence> process(String name, int bps){
         String path = Download(name);
         String[] seq = parse(path);
-        Set<CharSequence> prims = splitFasta(seq, bps);
-        return prims;
+        return splitFasta(seq, bps);
     }
 }

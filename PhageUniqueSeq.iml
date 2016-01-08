@@ -10,6 +10,9 @@
       <sourceFolder url="file://$MODULE_DIR$/src/main/resources" type="java-resource" />
       <sourceFolder url="file://$MODULE_DIR$/src/test/resources" type="java-test-resource" />
       <excludeFolder url="file://$MODULE_DIR$/.gradle" />
+      <excludeFolder url="file://$MODULE_DIR$/Common" />
+      <excludeFolder url="file://$MODULE_DIR$/Fastas" />
+      <excludeFolder url="file://$MODULE_DIR$/PhageData" />
       <excludeFolder url="file://$MODULE_DIR$/build" />
       <excludeFolder url="file://$MODULE_DIR$/src/main/java/Common" />
       <excludeFolder url="file://$MODULE_DIR$/src/main/java/Fastas" />
@@ -18,7 +21,7 @@
     </content>
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />
-    <orderEntry type="module-library">
+    <orderEntry type="module-library" exported="">
       <library name="Gradle: org.biojava:biojava3-core:3.0">
         <CLASSES>
           <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/org.biojava/biojava3-core/3.0/6190a068fe428aa3a4e0dde72cdccc8673b376c5/biojava3-core-3.0.jar!/" />
@@ -29,7 +32,7 @@
         </SOURCES>
       </library>
     </orderEntry>
-    <orderEntry type="module-library">
+    <orderEntry type="module-library" exported="">
       <library name="Gradle: commons-io:commons-io:2.4">
         <CLASSES>
           <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/commons-io/commons-io/2.4/b1b6ea3b7e4aa4f492509a4952029cd8e48019ad/commons-io-2.4.jar!/" />

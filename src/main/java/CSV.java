@@ -8,9 +8,15 @@ import java.util.Set;
  */
 public class CSV {
     private static final String COMMA_DELIMITER = ",";
+    public static void makeDirectory(File file){
+        if(!file.exists()){
+            file.mkdir();
+        }
+    }
+    //Writes Common csv data
     public static void writeCommonCSV(String s,Set<CharSequence> data) throws IOException {
         String base = new File("").getAbsolutePath();
-        FileWriter fileWriter = new FileWriter(base+"\\src\\main\\java\\Common\\"+s+".csv");
+        FileWriter fileWriter = new FileWriter(base+"\\Common\\"+s+".csv");
         data.forEach(x ->{
             try {
                 fileWriter.append(x);
@@ -22,9 +28,10 @@ public class CSV {
         fileWriter.flush();
         fileWriter.close();
     }
+    //Writes phageData csv data
     public static void writeDataCSV(String s,Set<CharSequence> data) throws IOException {
         String base = new File("").getAbsolutePath();
-        FileWriter fileWriter = new FileWriter(base+"\\src\\main\\java\\PhageData\\"+s+".csv");
+        FileWriter fileWriter = new FileWriter(base+"\\PhageData\\"+s+".csv");
         data.forEach(x ->{
             try {
                 fileWriter.append(x);
@@ -36,9 +43,10 @@ public class CSV {
         fileWriter.flush();
         fileWriter.close();
     }
+    //Writes unique csv data
     public static void writeUniqueCSV(String s,Set<CharSequence> data) throws IOException {
         String base = new File("").getAbsolutePath();
-        FileWriter fileWriter = new FileWriter(base+"\\src\\main\\java\\Unique\\"+s+".csv");
+        FileWriter fileWriter = new FileWriter(base+"\\Unique\\"+s+".csv");
         data.forEach(x ->{
             try {
                 fileWriter.append(x);
@@ -50,6 +58,7 @@ public class CSV {
         fileWriter.flush();
         fileWriter.close();
     }
+    //reads a csv written in any of the prior formats
     public static Set<CharSequence> readCSV(String path1){
         BufferedReader br = null;
         String line;

@@ -1,0 +1,5 @@
+Manifest-Version: 1.0
+Specification-Title: Mycobacteriophage Unique Sequence Finder
+Specification-Version: 1.0
+Main-Class: Main
+

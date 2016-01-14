@@ -7,11 +7,11 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
- * Created by Thomas on 12/22/2015. Will be used for future analysis for ideal primers.
+ * Created by Thomas on 12/22/2015. Used for determination of ideal primers.
  */
 public class PrimerDesign {
     //finds gc content of a nucleotide
-    public static double gcContent(CharSequence primer){
+    private static double gcContent(CharSequence primer){
         int i = 0;
         int count = 0;
         while(i < primer.length()){
@@ -24,7 +24,7 @@ public class PrimerDesign {
         return count/primer.length();
     }
     //estimates a nucleotide melting temperature
-    public static double sequenceTm(CharSequence primer){
+    private static double sequenceTm(CharSequence primer){
         //64.9 +41*(yG+zC-16.4)/(wA+xT+yG+zC)
         int g = 0;
         int c = 0;
@@ -48,12 +48,6 @@ public class PrimerDesign {
             i++;
         }
         return 64.9 +41*(g+c-16.4)/(a+t+g+c);
-    }
-    //sets parameters to select primers for
-    public static Set<CharSequence> selectPrimers(Set<CharSequence> primers){
-        return primers.parallelStream()
-                .filter(x-> (gcContent(x)<=0.60)&&(gcContent(x)>=0.40)
-                &&(sequenceTm(x)>=55)&&(sequenceTm(x)<=70)).collect(Collectors.toSet());
     }
     public static int primerLocation(CharSequence primer, File fasta) {
         int loc;
@@ -84,5 +78,32 @@ public class PrimerDesign {
                 .collect(Collectors.groupingBy(l -> l[0]));
         List<String[]> phages = collect.get(cluster);
 
+    }
+    //sets parameters to select primers
+    private static Set<CharSequence> selectPrimers(Set<CharSequence> primers){
+        return primers.parallelStream()
+                .filter(x-> (gcContent(x)<=0.60)&&(gcContent(x)>=0.40)
+                        &&(sequenceTm(x)>=55)&&(sequenceTm(x)<=70)).collect(Collectors.toSet());
+    }
+    //Uses the select primers method to filter primers for all uniques
+    public static void filterInitialUnique(){
+        String base = new File("").getAbsolutePath();
+        ImportPhagelist list = null;
+        File file = new File(base+"\\Filter");
+        CSV.makeDirectory(file);
+        File[] files1 = new File(base+"\\Unique\\").listFiles();
+        List<File> uniqueFiles = new ArrayList<>();
+        for(File x: files1){uniqueFiles.add(x);}
+        uniqueFiles.stream().forEach(x->{
+            Set<CharSequence> unique = CSV.readCSV(x.getAbsolutePath());
+            String cluster = x.getAbsolutePath().substring(x.getAbsolutePath().indexOf("ue\\") + 3,
+                    x.getAbsolutePath().indexOf(".csv"));
+            Set<CharSequence> uniqueFilter = selectPrimers(unique);
+            try {
+                CSV.writeFilteredCSV(cluster,uniqueFilter);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        });
     }
 }

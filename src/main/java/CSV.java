@@ -4,7 +4,7 @@ import java.util.HashSet;
 import java.util.Set;
 
 /**
- * Created by Charles Gregory on 12/8/2015.
+ * Created by Charles Gregory on 12/8/2015. Controls .csv file writing and reading.
  */
 public class CSV {
     private static final String COMMA_DELIMITER = ",";
@@ -47,6 +47,20 @@ public class CSV {
     public static void writeUniqueCSV(String s,Set<CharSequence> data) throws IOException {
         String base = new File("").getAbsolutePath();
         FileWriter fileWriter = new FileWriter(base+"\\Unique\\"+s+".csv");
+        data.forEach(x ->{
+            try {
+                fileWriter.append(x);
+                fileWriter.append(COMMA_DELIMITER);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        });
+        fileWriter.flush();
+        fileWriter.close();
+    }
+    public static void writeFilteredCSV(String s,Set<CharSequence> data) throws IOException {
+        String base = new File("").getAbsolutePath();
+        FileWriter fileWriter = new FileWriter(base+"\\Filter\\"+s+".csv");
         data.forEach(x ->{
             try {
                 fileWriter.append(x);

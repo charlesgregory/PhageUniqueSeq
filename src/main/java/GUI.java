@@ -10,9 +10,17 @@ import java.io.IOException;
  * Created by Charles Gregory on 12/22/2015. Setups and runs GUI.
  */
 public class GUI {
+    GUI(){
+        try {
+            GUI.generateWindow(GUI.analysisContent());
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
     private static JButton p;
     private static JButton co;
     private static JButton u;
+    private static JButton fil;
     private static int bp;
     private static JComboBox bpList;
     //Combo box listener
@@ -32,9 +40,22 @@ public class GUI {
     //Button Listener
     private static class ClickListener implements ActionListener {
         public void actionPerformed(ActionEvent e){
-            if (e.getSource() == p){Cluster.allPhages(bp);}
-            else if (e.getSource() == co){Cluster.assignClusters();}
-            else if (e.getSource() == u){Cluster.unique();}
+            if (e.getSource() == p){
+                Cluster.allPhages(bp);
+                p.setText("Finished");
+            }
+            else if (e.getSource() == co){
+                Cluster.assignClusters();
+                co.setText("Finished");
+            }
+            else if (e.getSource() == u){
+                Cluster.unique();
+                u.setText("Finished");
+            }
+            else if (e.getSource() == fil){
+                PrimerDesign.filterInitialUnique();
+                fil.setText("Finished");
+            }
         }
     }
     //Creates JPanel content for the analysis view
@@ -42,6 +63,7 @@ public class GUI {
         p = new JButton("Process Phages");
         co = new JButton("Common Analysis");
         u = new JButton("Unique Analysis");
+        fil = new JButton("Filter results");
         String[] list = {"15", "16", "17", "18", "19", "20"};
         bpList = new JComboBox(list);
 
@@ -57,24 +79,30 @@ public class GUI {
         ClickListener lu = new ClickListener();
         u.addActionListener(lu);
 
+        ClickListener fi = new ClickListener();
+        fil.addActionListener(fi);
+
         JPanel content = new JPanel();
         content.setLayout(new FlowLayout());
-        content.add(new JLabel("Choose a bp size"));
+        content.add(new JLabel("Choose a bp size:"));
         content.add(bpList);
         content.add(p);
         content.add(co);
         content.add(u);
-
+        content.add(fil);
         return content;
     }
     //Future view
     public static JPanel viewCommonResults(){
+
         JPanel content = new JPanel();
+        content.setLayout(new FlowLayout());
         return content;
     }
     //Future view
     public static JPanel viewResultsContent(){
         JPanel content = new JPanel();
+        content.setLayout(new FlowLayout());
         return content;
     }
     //Create singleton instance of the JFrame

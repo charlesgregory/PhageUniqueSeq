@@ -21,7 +21,7 @@ public class PrimerDesign {
             }
             i++;
         }
-        return count/primer.length();
+        return count * 1.0 /primer.length();
     }
     //estimates a nucleotide melting temperature
     private static double sequenceTm(CharSequence primer){
@@ -47,7 +47,7 @@ public class PrimerDesign {
             }
             i++;
         }
-        return 64.9 +41*(g+c-16.4)/(a+t+g+c);
+        return 64.9 +(41*((g*1.0)+(c*1.0)-16.4)/((a+t+g+c)*1.0));
     }
     public static int primerLocation(CharSequence primer, File fasta) {
         int loc;
@@ -81,9 +81,16 @@ public class PrimerDesign {
     }
     //sets parameters to select primers
     private static Set<CharSequence> selectPrimers(Set<CharSequence> primers){
-        return primers.parallelStream()
-                .filter(x-> (gcContent(x)<=0.60)&&(gcContent(x)>=0.40)
-                        &&(sequenceTm(x)>=55)&&(sequenceTm(x)<=70)).collect(Collectors.toSet());
+        Set<CharSequence> filter = primers.parallelStream()
+                .filter(x -> (gcContent(x) <= 0.60) && (gcContent(x) >= 0.40)).collect(Collectors.toSet());
+        //&& (sequenceTm(x) >= 55) && (sequenceTm(x) <= 70)
+        System.out.println(filter.size());
+        List<Double> collect = primers.parallelStream().map(x -> sequenceTm(x)).collect(Collectors.toList());
+        double count = 0.0;
+        for(double x:collect){count = count+x;}
+        count = count / collect.size();
+        System.out.println("Avereage Tm:"+count);
+        return filter;
     }
     //Uses the select primers method to filter primers for all uniques
     public static void filterInitialUnique(){
@@ -95,10 +102,12 @@ public class PrimerDesign {
         List<File> uniqueFiles = new ArrayList<>();
         for(File x: files1){uniqueFiles.add(x);}
         uniqueFiles.stream().forEach(x->{
-            Set<CharSequence> unique = CSV.readCSV(x.getAbsolutePath());
             String cluster = x.getAbsolutePath().substring(x.getAbsolutePath().indexOf("ue\\") + 3,
                     x.getAbsolutePath().indexOf(".csv"));
+            Set<CharSequence> unique = CSV.readCSV(x.getAbsolutePath());
+            System.out.println(cluster);
             Set<CharSequence> uniqueFilter = selectPrimers(unique);
+            System.out.println();
             try {
                 CSV.writeFilteredCSV(cluster,uniqueFilter);
             } catch (IOException e) {

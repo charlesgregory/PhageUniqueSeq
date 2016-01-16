@@ -77,6 +77,12 @@ public class Fasta {
         else if(name.equals("Seabiscuit")){
             path ="http://phagesdb.org/media/fastas/SeaBiscuit.fasta";
         }
+        else if(name.equals("Byougenkin")){
+            path ="http://phagesdb.org/media/fastas/Byougakin.fasta";
+        }
+        else if(name.equals("PhenghisKhan")) {
+            path = "http://phagesdb.org/media/fastas/PhenghisKahn.fasta";
+        }
         else{
             path = "http://phagesdb.org/media/fastas/"+name+".fasta";
         }

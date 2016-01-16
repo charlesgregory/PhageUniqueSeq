@@ -99,7 +99,9 @@ public class CSV {
             }
         }
         Set<CharSequence> s = new HashSet<>();
-        Collections.addAll(s, prim);
+        if(prim != null){
+            Collections.addAll(s, prim);
+        }
         return s;
     }
 }

@@ -12,7 +12,9 @@
       <excludeFolder url="file://$MODULE_DIR$/.gradle" />
       <excludeFolder url="file://$MODULE_DIR$/Common" />
       <excludeFolder url="file://$MODULE_DIR$/Fastas" />
+      <excludeFolder url="file://$MODULE_DIR$/Filter" />
       <excludeFolder url="file://$MODULE_DIR$/PhageData" />
+      <excludeFolder url="file://$MODULE_DIR$/Unique" />
       <excludeFolder url="file://$MODULE_DIR$/build" />
       <excludeFolder url="file://$MODULE_DIR$/src/main/java/Common" />
       <excludeFolder url="file://$MODULE_DIR$/src/main/java/Fastas" />

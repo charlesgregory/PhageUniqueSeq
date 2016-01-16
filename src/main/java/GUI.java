@@ -119,6 +119,7 @@ public class GUI {
         window.setContentPane(content);
         window.setSize(400,400);
         window.setLocation(100,100);
+        window.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
         window.setVisible(true);
     }
 

@@ -4,27 +4,29 @@ import java.io.*;
 import java.net.URL;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 import java.io.InputStreamReader;
 
 /**
  * Created by Charles Gregory on 11/10/2015.
- * Controls the import of the mycobacterium smegmatis phage list
+ * Controls the import of the phage list
  * from phagesdb.org
  */
 public class ImportPhagelist {
-    List<String[]> full;
+    public static List<String[]> full;
+    String path;
+    Set<String> strains;
+    String chosenStrain;
     //Singleton pattern
     private static ImportPhagelist instance;
 
     private ImportPhagelist() throws IOException {
         String base = new File("").getAbsolutePath();
         File file = new File(base+"\\Fastas");
-        System.out.println(file.getAbsolutePath());
         CSV.makeDirectory(file);
-        String path =Download();
-        System.out.println(path);
-        this.full = readFile(path);
+        this.path =Download();
+        getStrains(path);
     }
 
     public static ImportPhagelist getInstance() throws IOException {
@@ -33,9 +35,20 @@ public class ImportPhagelist {
         }
         return instance;
     }
+    private void getStrains(String path1) throws IOException {
+        String cvsSplitBy = "\\t";
+        List<String[]> lines = null;
+        try (FileInputStream fis = new FileInputStream(path1);
+             BufferedReader br = new BufferedReader( new InputStreamReader(fis))) {
+            lines = br.lines().map((l) -> l.split(cvsSplitBy)).collect(Collectors.toList());
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        }
+        this.strains = lines.stream().map(x -> x[1]).collect(Collectors.toSet());;
 
+    }
     //parses phagelist tsv file and preselects only mycobacterium smegmatis phages
-    private List<String[]> readFile(String path1) throws IOException {
+    public List<String[]> readFile(String path1, String strain) throws IOException {
         String cvsSplitBy = "\\t";
         List<String[]> lines = null;
         try (FileInputStream fis = new FileInputStream(path1);
@@ -44,9 +57,7 @@ public class ImportPhagelist {
         } catch (FileNotFoundException e) {
             e.printStackTrace();
         }
-        System.out.println(lines.isEmpty());
-        System.out.println(Arrays.toString(lines.get(1)));
-        List<String[]> collect = lines.stream().filter(x -> x[1].contains("Mycobacterium smegmatis"))
+        List<String[]> collect = lines.stream().filter(x -> x[1].equals(strain))
                 .map(x -> {
                     if(x[2].equals("Singleton")){
                         String[] r = new String[2];
@@ -62,7 +73,6 @@ public class ImportPhagelist {
                             }
                 }
                 ).collect(Collectors.toList());
-        System.out.println(collect.isEmpty());
         return collect;
     }
     //Downloads phagelist file from phagesdb.org

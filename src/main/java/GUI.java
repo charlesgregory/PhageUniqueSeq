@@ -5,24 +5,31 @@ import java.awt.event.ActionListener;
 import java.awt.event.ItemEvent;
 import java.awt.event.ItemListener;
 import java.io.IOException;
+import java.util.*;
+import java.util.List;
+import java.util.stream.Collector;
+import java.util.stream.Collectors;
 
 /**
  * Created by Charles Gregory on 12/22/2015. Setups and runs GUI.
  */
 public class GUI {
-    GUI(){
-        try {
-            GUI.generateWindow(GUI.analysisContent());
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
     private static JButton p;
     private static JButton co;
     private static JButton u;
     private static JButton fil;
     private static int bp;
     private static JComboBox bpList;
+    private static JComboBox strainList;
+    private static ImportPhagelist phagelist;
+    GUI(){
+        try {
+            phagelist =ImportPhagelist.getInstance();
+            GUI.generateWindow(GUI.analysisContent());
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
     //Combo box listener
     private static class ListListener implements ActionListener{
         public void actionPerformed(ActionEvent e){
@@ -35,8 +42,14 @@ public class GUI {
                 else if (select.equals("19")){bp = 19;}
                 else if (select.equals("20")){bp = 20;}
             }
+            if (e.getSource() == strainList){
+                 phagelist.chosenStrain= (String)strainList.getSelectedItem();
+
+            }
+
         }
     }
+
     //Button Listener
     private static class ClickListener implements ActionListener {
         public void actionPerformed(ActionEvent e){
@@ -64,11 +77,18 @@ public class GUI {
         co = new JButton("Common Analysis");
         u = new JButton("Unique Analysis");
         fil = new JButton("Filter results");
-        String[] list = {"15", "16", "17", "18", "19", "20"};
-        bpList = new JComboBox(list);
+        String[] numberlist = {"15", "16", "17", "18", "19", "20"};
+        List<String> strains = phagelist.strains.stream().collect(Collectors.toList());
+        Collections.sort(strains);
+        String[] strainArray = strains.toArray(new String[strains.size()]);
+        bpList = new JComboBox(numberlist);
+        strainList = new JComboBox(strainArray);
 
-        ListListener l = new ListListener();
-        bpList.addActionListener(l);
+        ListListener bpListener = new ListListener();
+        bpList.addActionListener(bpListener);
+
+        ListListener strainListener = new ListListener();
+        strainList.addActionListener(strainListener);
 
         ClickListener lp = new ClickListener();
         p.addActionListener(lp);
@@ -86,6 +106,8 @@ public class GUI {
         content.setLayout(new FlowLayout());
         content.add(new JLabel("Choose a bp size:"));
         content.add(bpList);
+        content.add(new JLabel("Choose a strain:"));
+        content.add(strainList);
         content.add(p);
         content.add(co);
         content.add(u);

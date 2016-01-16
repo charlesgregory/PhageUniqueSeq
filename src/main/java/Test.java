@@ -7,7 +7,6 @@ import java.util.Set;
  */
 public class Test {
     public static void main(String[] args) throws IOException {
-        Set<CharSequence> s = new HashSet<>();
-        CSV.writeCommonCSV("Test",s);
+        ImportPhagelist instance = ImportPhagelist.getInstance();
     }
 }

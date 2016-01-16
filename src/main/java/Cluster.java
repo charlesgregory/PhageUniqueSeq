@@ -17,6 +17,7 @@ public class Cluster {
         ImportPhagelist list = null;
         try {
             list = ImportPhagelist.getInstance();
+            list.full = list.readFile(list.path,list.chosenStrain);
         } catch (IOException e) {
             e.printStackTrace();
         }

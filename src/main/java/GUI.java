@@ -18,6 +18,7 @@ public class GUI {
     private static JButton co;
     private static JButton u;
     private static JButton fil;
+    private static JButton loc;
     private static int bp;
     private static JComboBox bpList;
     private static JComboBox strainList;
@@ -69,6 +70,10 @@ public class GUI {
                 PrimerDesign.filterInitialUnique();
                 fil.setText("Finished");
             }
+            else if (e.getSource() == loc){
+                PrimerDesign.getAllLocations();
+                loc.setText("Finished");
+            }
         }
     }
     //Creates JPanel content for the analysis view
@@ -77,6 +82,7 @@ public class GUI {
         co = new JButton("Common Analysis");
         u = new JButton("Unique Analysis");
         fil = new JButton("Filter results");
+        loc =  new JButton("Get locations");
         String[] numberlist = {"15", "16", "17", "18", "19", "20"};
         List<String> strains = phagelist.strains.stream().collect(Collectors.toList());
         Collections.sort(strains);
@@ -102,6 +108,9 @@ public class GUI {
         ClickListener fi = new ClickListener();
         fil.addActionListener(fi);
 
+        ClickListener lo = new ClickListener();
+        loc.addActionListener(lo);
+
         JPanel content = new JPanel();
         content.setLayout(new FlowLayout());
         content.add(new JLabel("Choose a bp size:"));
@@ -112,6 +121,7 @@ public class GUI {
         content.add(co);
         content.add(u);
         content.add(fil);
+        content.add(loc);
         return content;
     }
     //Future view

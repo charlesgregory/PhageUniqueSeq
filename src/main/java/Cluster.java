@@ -25,7 +25,6 @@ public class Cluster {
         File file = new File(base+"\\PhageData");
         CSV.makeDirectory(file);
         int count = 0;
-        System.out.println(list.full.isEmpty());
         list.full.forEach(x->{
             try {
                 CSV.writeDataCSV(x[1],Fasta.process(x[1],bps));

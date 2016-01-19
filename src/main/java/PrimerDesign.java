@@ -49,7 +49,8 @@ public class PrimerDesign {
         }
         return 64.9 +(41*((g*1.0)+(c*1.0)-16.4)/((a+t+g+c)*1.0));
     }
-    public static int primerLocation(CharSequence primer, File fasta) {
+    //gets the location of a primer within a fasta file
+    private static int primerLocation(CharSequence primer, File fasta) {
         int loc;
         String[] seq = Fasta.parse(fasta.getAbsolutePath());
         if (seq[0].contains(primer)){
@@ -64,7 +65,8 @@ public class PrimerDesign {
         }
         return loc;
     }
-    public static void getAverageLocation(String cluster,CharSequence primer){
+    //gets the average location of a primer within a cluster
+    private static int getAverageLocation(String cluster,CharSequence primer){
         String base = new File("").getAbsolutePath();
         ImportPhagelist list = null;
         try {
@@ -77,19 +79,46 @@ public class PrimerDesign {
         Map<String, List<String[]>> collect = list.full.stream()
                 .collect(Collectors.groupingBy(l -> l[0]));
         List<String[]> phages = collect.get(cluster);
+        int count = 0;
+        for (String[] x: phages){
+             File f = new File(base+x[1]+".fasta");
+             int position = primerLocation(primer,f);
+             count = count+position;
+        }
+        return count/phages.size();
 
     }
     //sets parameters to select primers
+    public static void getAllLocations(){
+        String base = new File("").getAbsolutePath();
+        ImportPhagelist list = null;
+        File file = new File(base+"\\Locations");
+        CSV.makeDirectory(file);
+        File[] files1 = new File(base+"\\Unique\\").listFiles();
+        List<File> uniqueFiles = new ArrayList<>();
+        for(File x: files1){uniqueFiles.add(x);}
+        uniqueFiles.stream().forEach(x->{
+            String cluster = x.getAbsolutePath().substring(x.getAbsolutePath().indexOf("ue\\") + 3,
+                    x.getAbsolutePath().indexOf(".csv"));
+            List<CharSequence> unique = CSV.readNonSetCSV(x.getAbsolutePath());
+            int[] locations = new int[unique.size()];
+            int count = 0;
+            for(CharSequence y: unique){
+                locations[count] = getAverageLocation(cluster, y);
+                count++;
+            }
+            try {
+                CSV.writeLocationCSV(cluster,locations);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        });
+    }
     private static Set<CharSequence> selectPrimers(Set<CharSequence> primers){
         Set<CharSequence> filter = primers.parallelStream()
                 .filter(x -> (gcContent(x) <= 0.60) && (gcContent(x) >= 0.40)).collect(Collectors.toSet());
         //&& (sequenceTm(x) >= 55) && (sequenceTm(x) <= 70)
         System.out.println(filter.size());
-        List<Double> collect = primers.parallelStream().map(x -> sequenceTm(x)).collect(Collectors.toList());
-        double count = 0.0;
-        for(double x:collect){count = count+x;}
-        count = count / collect.size();
-        System.out.println("Avereage Tm:"+count);
         return filter;
     }
     //Uses the select primers method to filter primers for all uniques
@@ -105,9 +134,7 @@ public class PrimerDesign {
             String cluster = x.getAbsolutePath().substring(x.getAbsolutePath().indexOf("ue\\") + 3,
                     x.getAbsolutePath().indexOf(".csv"));
             Set<CharSequence> unique = CSV.readCSV(x.getAbsolutePath());
-            System.out.println(cluster);
             Set<CharSequence> uniqueFilter = selectPrimers(unique);
-            System.out.println();
             try {
                 CSV.writeFilteredCSV(cluster,uniqueFilter);
             } catch (IOException e) {

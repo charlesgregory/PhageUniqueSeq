@@ -63,7 +63,8 @@ public class Fasta {
         return collect;
     }
     //Downloads the fasta files from phagesdb.org based off the name of the phage
-    private static String Download(String name) {
+    //Also controls for inconsistencies in the phagelist
+    public static String Download(String name) {
         String path;
         if(name.equals("BrownCNA")){
             path ="http://phagesdb.org/media/fastas/Browncna.fasta";
@@ -82,6 +83,12 @@ public class Fasta {
         }
         else if(name.equals("PhenghisKhan")) {
             path = "http://phagesdb.org/media/fastas/PhenghisKahn.fasta";
+        }
+        else if(name.equals("Caliburn")) {
+            path = "http://phagesdb.org/media/fastas/Excalibur.fasta";
+        }
+        else if(name.equals("Godpower")) {
+            path = "http://phagesdb.org/media/fastas/GodPower.fasta";
         }
         else{
             path = "http://phagesdb.org/media/fastas/"+name+".fasta";

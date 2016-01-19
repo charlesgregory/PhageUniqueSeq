@@ -14,8 +14,14 @@ into a .jar file using the included manifest. Phage and common analysis take a f
 minutes to complete. Unique analysis however takes more time and is very CPU intensive.
 I would recommend having a good CPU with good ventilation before attempting. I performed
 these computations using a Dell Inspiron 15R-SE with an Intel i7 (8 cores after hyperthreading),
-8 gbs of RAM, and a SSD.
+8 gbs of RAM, and a SSD. There may be bugs associated with the download of the fasta files
+due to errors in the phagelist from phagesdb.org. My current solution to this problem is to
+hardcode the fixes. I will do this with every release, however, until a new release the
+bug will persist.
 
 This project was created at Western Kentucky University with the help of Dr. Claire Rinehart,
 the WKU Bioinformatics and Information Science Center, and the WKU High Performance Computing
 Center.
+
+If you have any questions about the program or the project please email me at
+charles.gregory940@topper.wku.edu.

@@ -75,6 +75,34 @@ public class ImportPhagelist {
                 ).collect(Collectors.toList());
         return collect;
     }
+    //used for testing and bug fixing
+    public List<String[]> readFileAll(String path1) throws IOException {
+        String cvsSplitBy = "\\t";
+        List<String[]> lines = null;
+        try (FileInputStream fis = new FileInputStream(path1);
+             BufferedReader br = new BufferedReader( new InputStreamReader(fis))) {
+            lines = br.lines().map((l) -> l.split(cvsSplitBy)).collect(Collectors.toList());
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        }
+        List<String[]> collect = lines.stream()
+                .map(x -> {
+                            if(x[2].equals("Singleton")){
+                                String[] r = new String[2];
+                                r[0] = x[0];
+                                r[1] = x[0];
+                                return r;
+                            }
+                            else{
+                                String[] r = new String[2];
+                                r[0] = x[2];
+                                r[1] = x[0];
+                                return r;
+                            }
+                        }
+                ).collect(Collectors.toList());
+        return collect;
+    }
     //Downloads phagelist file from phagesdb.org
     private static String Download() throws IOException {
         String path = "http://phagesdb.org/data/?set=seq&type=full";

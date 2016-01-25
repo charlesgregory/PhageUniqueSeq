@@ -1,5 +1,5 @@
 Manifest-Version: 1.0
 Specification-Title: Mycobacteriophage Unique Sequence Finder
-Specification-Version: 1.2.1
+Specification-Version: 1.2.2
 Main-Class: Main
 

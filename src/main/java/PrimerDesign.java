@@ -50,14 +50,11 @@ public class PrimerDesign {
         return 64.9 +(41*((g*1.0)+(c*1.0)-16.4)/((a+t+g+c)*1.0));
     }
     //gets the location of a primer within a fasta file
-    private static int primerLocation(CharSequence primer, File fasta) {
+    private static int primerLocation(CharSequence primer, String path) {
         int loc;
-        String[] seq = Fasta.parse(fasta.getAbsolutePath());
-        if (seq[0].contains(primer)){
-            loc = seq[0].indexOf(primer.toString());
-        }
-        else if(seq[1].contains(primer)){
-            loc = seq[1].indexOf(primer.toString());
+        List<CharSequence> seq = CSV.readNonSetCSV(path);
+        if (seq.contains(primer)){
+            loc = seq.indexOf(primer.toString());
         }
         else{
             System.out.println("Doesn't contain primer");
@@ -74,15 +71,12 @@ public class PrimerDesign {
         } catch (IOException e) {
             e.printStackTrace();
         }
-        File[] files1 = new File(base+"\\Fastas\\").listFiles();
-        List<File> fastaFiles = new ArrayList<>();
         Map<String, List<String[]>> collect = list.full.stream()
                 .collect(Collectors.groupingBy(l -> l[0]));
         List<String[]> phages = collect.get(cluster);
         int count = 0;
         for (String[] x: phages){
-             File f = new File(base+x[1]+".fasta");
-             int position = primerLocation(primer,f);
+             int position = primerLocation(primer,base+"\\PhageData\\"+x[1]+".csv");
              count = count+position;
         }
         return count/phages.size();

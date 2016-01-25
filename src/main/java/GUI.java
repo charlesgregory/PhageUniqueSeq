@@ -45,6 +45,11 @@ public class GUI {
             }
             if (e.getSource() == strainList){
                  phagelist.chosenStrain= (String)strainList.getSelectedItem();
+                try {
+                    phagelist.full = phagelist.readFile(phagelist.path, phagelist.chosenStrain);
+                } catch (IOException e1) {
+                    e1.printStackTrace();
+                }
 
             }
 

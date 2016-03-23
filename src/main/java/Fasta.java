@@ -78,12 +78,6 @@ public class Fasta {
         else if(name.equals("Seabiscuit")){
             path ="http://phagesdb.org/media/fastas/SeaBiscuit.fasta";
         }
-        else if(name.equals("Byougenkin")){
-            path ="http://phagesdb.org/media/fastas/Byougakin.fasta";
-        }
-        else if(name.equals("PhenghisKhan")) {
-            path = "http://phagesdb.org/media/fastas/PhenghisKahn.fasta";
-        }
         else if(name.equals("Caliburn")) {
             path = "http://phagesdb.org/media/fastas/Excalibur.fasta";
         }
@@ -94,7 +88,7 @@ public class Fasta {
             path = "http://phagesdb.org/media/fastas/"+name+".fasta";
         }
         String base = new File("").getAbsolutePath();
-        name = base+"\\Fastas\\"+name+".fasta";
+        name = base+"/Fastas/"+name+".fasta";
         File file = new File(name);
         try {
             URL netPath = new URL(path);

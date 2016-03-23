@@ -21,6 +21,10 @@ dependencies {
     testCompile group: 'junit', name: 'junit', version: '4.11'
     compile 'org.biojava:biojava3-core:3.0'
     compile 'commons-io:commons-io:2.4'
+    compile 'net.java.dev.jna:jna-platform:4.2.1'
+    compile 'com.nativelibs4java:bridj:0.6.2'
+    compile 'com.nativelibs4java:jnaerator:0.12'
+
 
 
 }

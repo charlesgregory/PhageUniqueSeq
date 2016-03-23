@@ -30,7 +30,7 @@ public class CSV {
     //Writes phageData csv data
     public static void writeDataCSV(String s,Set<CharSequence> data) throws IOException {
         String base = new File("").getAbsolutePath();
-        FileWriter fileWriter = new FileWriter(base+"\\PhageData\\"+s+".csv");
+        FileWriter fileWriter = new FileWriter(base+"/PhageData/"+s+".csv");
         data.forEach(x ->{
             try {
                 fileWriter.append(x);

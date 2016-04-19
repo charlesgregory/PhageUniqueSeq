@@ -1,11 +1,9 @@
-
 import java.io.IOException;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
 
-/**
- * Copyright (C) 2016  Thomas Gregory
+/**Copyright (C) 2016  Thomas Gregory
 
  This program is free software: you can redistribute it and/or modify
  it under the terms of the GNU General Public License as published by
@@ -23,40 +21,38 @@ import java.sql.SQLException;
  * Created by Thomas on 12/31/2015.
  * Main for database updating
  */
-public class Update{
+@SuppressWarnings("Duplicates")
+public class MycoUpdate{
     static final String JDBC_DRIVER_HSQL = "org.hsqldb.jdbc.JDBCDriver";
     static final String DB_SERVER_URL ="jdbc:hsqldb:hsql://localhost/primerdb;ifexists=true";
     static final String DB_URL_HSQL_C = "jdbc:hsqldb:file:database/primerdb;ifexists=true";
+    static final String MYCO_DB_SERVER_URL ="jdbc:hsqldb:hsql://localhost/myco;ifexists=true";
     public static Connection conn;
     private static final String USER = "SA";
     private static final String PASS = "";
 
     public static void main(String[] args) throws IOException, SQLException, ClassNotFoundException, IllegalAccessException, InstantiationException {
         Class.forName(JDBC_DRIVER_HSQL).newInstance();
-        conn = DriverManager.getConnection(DB_SERVER_URL,USER,PASS);
-        if(args[0].equals("-meta")){
+        conn = DriverManager.getConnection(MYCO_DB_SERVER_URL,USER,PASS);
+        if(args[1].equals("-meta")){
             HSqlManager.getClusterSizes(conn);
         }
-        else if(args[0].equals("-clear")){
+        else if(args[1].equals("-clear")){
             HSqlManager.clearDatabase(conn);
         }
-        else if(args[1].equals("-newCommon")){
-            HSqlManager.runNewBPCommon(conn,Integer.valueOf(args[2]));
-        }
-        else if(args[1].equals("-newUnique")){
-            HSqlManager.runNewBPUnique(conn,Integer.valueOf(args[2]));
+        else if(args[1].equals("-build")){
+            HSqlManager.main(args);
         }
         else if(args[1].equals("-new")){
             if(args[3]!=null){
                 for (int i =Integer.valueOf(args[2]);
                      i<=Integer.valueOf(args[3]);i++){
-                    HSqlManager.runNewBP(conn, i);
+                    HSqlManager.runNewMycoBP(conn, i);
                     System.gc();
                 }
             }else {
                 HSqlManager.runNewBP(conn, Integer.valueOf(args[2]));
             }
-            conn.createStatement().execute("SHUTDOWN");
         }
         else if(args[1].equals("-pick")){
             HSqlPrimerDesign.locations(conn);

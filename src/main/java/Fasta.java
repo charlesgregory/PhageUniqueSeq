@@ -1,7 +1,8 @@
 
 import org.apache.commons.io.FileUtils;
-import org.biojava3.core.sequence.DNASequence;
-import org.biojava3.core.sequence.io.FastaReaderHelper;
+import org.biojava.nbio.core.sequence.DNASequence;
+import org.biojava.nbio.core.sequence.io.FastaReaderHelper;
+
 import java.io.File;
 import java.io.IOException;
 import java.net.URL;
@@ -10,6 +11,21 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 /**
+ * Copyright (C) 2016  Thomas Gregory
+
+ This program is free software: you can redistribute it and/or modify
+ it under the terms of the GNU General Public License as published by
+ the Free Software Foundation, either version 3 of the License, or
+ (at your option) any later version.
+
+ This program is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ GNU General Public License for more details.
+
+ You should have received a copy of the GNU General Public License
+ along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
  * Created by Charles Gregory on 11/6/2015.
  * Controls the fasta files. This class can download fasta files from phagesdb.org
  * using the phagelist. It can also parse the fasta sequence and split the fasta into pieces.
@@ -24,9 +40,9 @@ public class Fasta {
             LinkedHashMap<String, DNASequence> f = FastaReaderHelper.readFastaDNASequence(new File(path));
             List<String> dnaList = new ArrayList<>(1);
             for (Map.Entry<String, DNASequence> stringDNASequenceEntry : f.entrySet()) {
-                dnaList.add(stringDNASequenceEntry.getValue().getSequenceAsString());
+                dnaList.add(stringDNASequenceEntry.getValue().getSequenceAsString().toUpperCase());
                 dnaList.add(stringDNASequenceEntry.getValue()
-                        .getReverseComplement().getSequenceAsString());
+                        .getReverseComplement().getSequenceAsString().toUpperCase());
             }
             seq1 = dnaList.get(0);
             seq2 = dnaList.get(1);
@@ -54,7 +70,7 @@ public class Fasta {
         Set<CharSequence> collect2 = IntStream.range(0, length).mapToObj(start -> {
             List<CharSequence> primers = new ArrayList<>();
             for (int i = start; i < seq[1].length() - length; i += length) {
-                CharSequence s = seq[0].substring(i, i + length);
+                CharSequence s = seq[1].substring(i, i + length);
                 primers.add(s);
             }
             return primers;
@@ -84,6 +100,9 @@ public class Fasta {
         else if(name.equals("Godpower")) {
             path = "http://phagesdb.org/media/fastas/GodPower.fasta";
         }
+        else if(name.equals("Romney")) {
+            path = "http://phagesdb.org/media/fastas/Romney2012.fasta";
+        }
         else{
             path = "http://phagesdb.org/media/fastas/"+name+".fasta";
         }
@@ -103,5 +122,31 @@ public class Fasta {
         String path = Download(name);
         String[] seq = parse(path);
         return splitFasta(seq, bps);
+    }
+    private static List<CharSequence> splitFasta2(String[] seq, int length){
+
+        List<CharSequence> collect = IntStream.range(0, length).mapToObj(start -> {
+            List<CharSequence> primers = new ArrayList<>();
+            for (int i = start; i < seq[0].length() - length; i += length) {
+                CharSequence s = seq[0].substring(i, i + length);
+                primers.add(s);
+            }
+            return primers;
+        }).flatMap((i) -> i.stream()).collect(Collectors.toList());
+        List<CharSequence> collect2 = IntStream.range(0, length).mapToObj(start -> {
+            List<CharSequence> primers = new ArrayList<>();
+            for (int i = start; i < seq[1].length() - length; i += length) {
+                CharSequence s = seq[1].substring(i, i + length);
+                primers.add(s);
+            }
+            return primers;
+        }).flatMap((i) -> i.stream()).collect(Collectors.toList());
+        collect.addAll(collect2);
+        return collect;
+    }
+    public static List<CharSequence> processPrimers(String name, int bps){
+        String path = Download(name);
+        String[] seq = parse(path);
+        return splitFasta2(seq, bps);
     }
 }

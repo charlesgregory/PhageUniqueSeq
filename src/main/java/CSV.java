@@ -2,6 +2,21 @@ import java.io.*;
 import java.util.*;
 
 /**
+ * Copyright (C) 2016  Thomas Gregory
+
+ This program is free software: you can redistribute it and/or modify
+ it under the terms of the GNU General Public License as published by
+ the Free Software Foundation, either version 3 of the License, or
+ (at your option) any later version.
+
+ This program is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ GNU General Public License for more details.
+
+ You should have received a copy of the GNU General Public License
+ along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
  * Created by Charles Gregory on 12/8/2015. Controls .csv file writing and reading.
  */
 public class CSV {
@@ -28,9 +43,23 @@ public class CSV {
         fileWriter.close();
     }
     //Writes phageData csv data
-    public static void writeDataCSV(String s,Set<CharSequence> data) throws IOException {
+    public static void writeDataCSV(String s,Set<CharSequence> data,int bps) throws IOException {
         String base = new File("").getAbsolutePath();
-        FileWriter fileWriter = new FileWriter(base+"/PhageData/"+s+".csv");
+        FileWriter fileWriter = new FileWriter(base+"/PhageData/"+Integer.toString(bps)+s+".csv");
+        data.forEach(x ->{
+            try {
+                fileWriter.append(x);
+                fileWriter.append(COMMA_DELIMITER);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        });
+        fileWriter.flush();
+        fileWriter.close();
+    }
+    public static void writeDataCSV(String s,List<CharSequence> data,int bps) throws IOException {
+        String base = new File("").getAbsolutePath();
+        FileWriter fileWriter = new FileWriter(base+"/PhageData/"+Integer.toString(bps)+s+"Primers.csv");
         data.forEach(x ->{
             try {
                 fileWriter.append(x);

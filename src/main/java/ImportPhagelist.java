@@ -8,6 +8,21 @@ import java.util.stream.Collectors;
 import java.io.InputStreamReader;
 
 /**
+ * Copyright (C) 2016  Thomas Gregory
+
+ This program is free software: you can redistribute it and/or modify
+ it under the terms of the GNU General Public License as published by
+ the Free Software Foundation, either version 3 of the License, or
+ (at your option) any later version.
+
+ This program is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ GNU General Public License for more details.
+
+ You should have received a copy of the GNU General Public License
+ along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
  * Created by Charles Gregory on 11/10/2015.
  * Controls the import of the phage list
  * from phagesdb.org
@@ -46,7 +61,7 @@ public class ImportPhagelist {
         this.strains = lines.stream().skip(1).map(x -> x[1]).collect(Collectors.toSet());;
 
     }
-    //parses phagelist tsv file and preselects only mycobacterium smegmatis phages
+    //parses phagelist tsv file and preselects only strain phages
     public List<String[]> readFile(String path1, String strain) throws IOException {
         String cvsSplitBy = "\\t";
         List<String[]> lines = null;
@@ -142,5 +157,25 @@ public class ImportPhagelist {
         URL netPath = new URL(path);
         FileUtils.copyURLToFile(netPath, file);
         return file.toString();
+    }
+    public void parseAllPhagePrimers(int bps) throws IOException {
+        this.readFileAll(this.path)
+                .stream().forEach(x -> {
+            try {
+                CSV.writeDataCSV(x[1], Fasta.processPrimers(x[1], bps),bps);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        });
+    }
+    public void parseAllPhages(int bps) throws IOException {
+        this.readFileAll(this.path)
+                .stream().forEach(x -> {
+            try {
+                CSV.writeDataCSV(x[1], Fasta.process(x[1], bps),bps);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        });
     }
 }

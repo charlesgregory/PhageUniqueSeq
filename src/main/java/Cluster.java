@@ -5,6 +5,21 @@ import java.util.*;
 import java.util.stream.Collectors;
 import static java.util.stream.Collectors.toList;
 /**
+ * Copyright (C) 2016  Thomas Gregory
+
+ This program is free software: you can redistribute it and/or modify
+ it under the terms of the GNU General Public License as published by
+ the Free Software Foundation, either version 3 of the License, or
+ (at your option) any later version.
+
+ This program is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ GNU General Public License for more details.
+
+ You should have received a copy of the GNU General Public License
+ along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
  * Created by Charles Gregory on 11/17/2015.
  * Manages the cluster operations. Takes all phages from the phage list
  * and can perform determination of all common sequences and all unique sequences
@@ -27,7 +42,7 @@ public class Cluster {
         int count = 0;
         list.full.forEach(x -> {
             try {
-                CSV.writeDataCSV(x[1], Fasta.process(x[1], bps));
+                CSV.writeDataCSV(x[1], Fasta.process(x[1], bps),bps);
             } catch (IOException e) {
                 e.printStackTrace();
             }

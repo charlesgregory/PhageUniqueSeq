@@ -388,7 +388,7 @@ public class PrimerDesign {
         });
     }
     @Deprecated
-    private static Set<CharSequence> selectPrimers(Set<CharSequence> primers){
+    private static Set<CharSequence> selectPrimers(Set<String> primers){
         Set<CharSequence> filter = primers.parallelStream()
                 .filter(x -> (gcContent(x) <= 0.60) && (gcContent(x) >= 0.40)).collect(Collectors.toSet());
         //&& (sequenceTm(x) >= 55) && (sequenceTm(x) <= 70)
@@ -408,7 +408,7 @@ public class PrimerDesign {
         uniqueFiles.stream().forEach(x->{
             String cluster = x.getAbsolutePath().substring(x.getAbsolutePath().indexOf("ue\\") + 3,
                     x.getAbsolutePath().indexOf(".csv"));
-            Set<CharSequence> unique = CSV.readCSV(x.getAbsolutePath());
+            Set<String> unique = CSV.readCSV(x.getAbsolutePath());
             Set<CharSequence> uniqueFilter = selectPrimers(unique);
             try {
                 CSV.writeFilteredCSV(cluster,uniqueFilter);

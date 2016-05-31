@@ -61,8 +61,10 @@ public class MycoUpdate{
             HSqlPrimerDesign.checker(conn,Integer.valueOf(args[2]));
         }
         else if(args[1].equals("-check")){
-            FixPhagelist.main(new String[0]);
+//            FixPhagelist.main(new String[0]);
             HSqlManager.runChecks(conn);
+        }else if(args[1].equals("-test")){
+            Test.test(conn, 18);
         }
     }
 }

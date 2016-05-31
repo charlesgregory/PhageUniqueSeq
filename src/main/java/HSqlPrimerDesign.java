@@ -1,3 +1,4 @@
+import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
 import org.biojava.nbio.core.exceptions.CompoundNotFoundException;
 import org.biojava.nbio.core.sequence.DNASequence;
 import org.biojava.nbio.core.sequence.io.BufferedReaderBytesRead;
@@ -513,8 +514,8 @@ public class HSqlPrimerDesign {
         PrintWriter log = new PrintWriter(new File("javalog.log"));
         stat.execute("SET FILES LOG FALSE;");
         PreparedStatement st = db.prepareStatement("INSERT INTO Primerdb.MatchedPrimers(" +
-                "Primer, PrimerMatch, Comp, Cluster, Strain)" +
-                "Values(?,?,?,?,?)");
+                "Primer, PrimerMatch, Comp,FragAVG,FragVAR,H2SD,L2SD, Cluster, Strain)" +
+                "Values(?,?,?,?,?,?,?,?,?)");
         ResultSet call = stat.executeQuery("Select * From Primerdb.Phages;");
         List<String[]> phages = new ArrayList<>();
         String strain = "";
@@ -536,7 +537,7 @@ public class HSqlPrimerDesign {
         for(String z:clusters){
             System.out.println("Starting:"+z);
             List<Primer> primers = new ArrayList<>();
-            Map<CharSequence, Set<CharSequence>> matched= new HashMap<>();
+            Set<Matches> matched= new HashSet<>();
             Set<String> clustphage = phages.stream()
                     .filter(a -> a[0].equals(x) && a[1].equals(z)).map(a -> a[2])
                     .collect(Collectors.toSet());
@@ -565,8 +566,8 @@ public class HSqlPrimerDesign {
                     String[] seqs = Fasta.parse(base + "/Fastas/" + phage + ".fasta");
                     String sequence =seqs[0]+seqs[1];
                     Map<String, List<Integer>> seqInd = new HashMap<>();
-                    for (int i = 0; i <= sequence.length()-6; i++) {
-                        String sub=sequence.substring(i,i+6);
+                    for (int i = 0; i <= sequence.length()-10; i++) {
+                        String sub=sequence.substring(i,i+10);
                         if(seqInd.containsKey(sub)){
                             seqInd.get(sub).add(i);
                         }else {
@@ -579,7 +580,7 @@ public class HSqlPrimerDesign {
                     for (Primer primer : primers2) {
                         List<Integer> locs = new ArrayList<>();
                         String sequence1 = primer.getSequence();
-                        String frag = sequence1.substring(0,6);
+                        String frag = sequence1.substring(0,10);
                         List<Integer> integers = seqInd.get(frag);
                         if (integers != null) {
                             for (Integer i :integers) {
@@ -595,25 +596,31 @@ public class HSqlPrimerDesign {
                 });
                 System.out.println("locations found");
                 System.out.println((System.nanoTime() - time) / Math.pow(10, 9)/60.0);
+                final int[] k= new int[] {0};
                 primerlist2.parallelStream().forEach(a->{
-                    Set<CharSequence> matches = new HashSet<CharSequence>();
+                    int matches = 0;
                     int i=0;
                     while(primers2[i]!=a){
                         i++;
                     }
                     for (int j = i+1;j<primers2.length;j++) {
+                        double[] frags = new double[clustphages.length];
+                        int phageCounter =0;
                         Primer b =primers2[j];
-                        if(Math.abs(a.getTm() - b.getTm()) >5.0||
-                                a.getSequence().equals(b.getSequence())){
+                        boolean match = true;
+                        if(matches>0){
                             break;
                         }
-                        boolean match = true;
+                        if(Math.abs(a.getTm() - b.getTm()) >5.0||
+                                a.getSequence().equals(b.getSequence())){
+                            continue;
+                        }
                         for(String phage:clustphages) {
                             List<Integer> loc1 = locations.get(phage).get(a.getSequence());
                             List<Integer> loc2 = locations.get(phage).get(b.getSequence());
-                            if(loc1.size()==0){
-                                System.out.println(phage+" "+a.getSequence());
-                            }
+//                            if(loc1.size()==0){
+//                                System.out.println(phage+" "+a.getSequence());
+//                            }
                             if(loc1.size()==0||loc2.size()==0){
                                 match=false;
                                 break;
@@ -628,6 +635,7 @@ public class HSqlPrimerDesign {
                                 if(frag>=500&&
                                         frag<=2000){
                                     found=true;
+                                    frags[phageCounter++]=frag+0.0;
                                 }else if(l1<l2 && frag<500){
                                     count2++;
                                 }else if(l1>l2 && frag<500){
@@ -650,37 +658,42 @@ public class HSqlPrimerDesign {
                             }
                             if(!found){
                                 match=false;
+                                break;
                             }
 
                         }
                         if (match) {
-                            matches.add(b.getSequence());
+                            matches++;
+                            matched.add(new Matches(a,b,frags));
                         }
                     }
-                    if(matches.size()>0) {
-                        matched.put(a.getSequence(), matches);
-                    }
+//                    k[0]++;
+//                    System.out.println(k[0]);
                 });
                 System.out.println((System.nanoTime() - time) / Math.pow(10, 9)/60.0);
                 System.out.println("Primers matched");
                 int c = 0;
                 int i = 0;
                 try{
-                    for (CharSequence primerkey : matched.keySet()) {
-                        for (CharSequence primer : matched.get(primerkey)) {
-                            c++;
-                            st.setString(1, (String) primerkey);
-                            st.setString(2, (String) primer);
-                            st.setDouble(3,complementarity(primerkey,primer,Dpal_Inst));
-                            st.setString(4, z);
-                            st.setString(5, x);
-                            st.addBatch();
-                            i++;
-                            if (i == 1000) {
-                                i = 0;
-                                st.executeBatch();
-                                db.commit();
-                            }
+                    for (Matches primerkey : matched) {
+                        c++;
+                        String primer1= primerkey.one.getSequence();
+                        String primer2= primerkey.two.getSequence();
+                        st.setString(1, primer1);
+                        st.setString(2, primer2);
+                        st.setDouble(3,complementarity(primer1,primer2,Dpal_Inst));
+                        st.setDouble(4,primerkey.stats.getMean());
+                        st.setDouble(5,primerkey.stats.getVariance());
+                        st.setDouble(6,primerkey.stats.getMean()+2*primerkey.stats.getStandardDeviation());
+                        st.setDouble(7,primerkey.stats.getMean()-2*primerkey.stats.getStandardDeviation());
+                        st.setString(8, z);
+                        st.setString(9, x);
+                        st.addBatch();
+                        i++;
+                        if (i == 1000) {
+                            i = 0;
+                            st.executeBatch();
+                            db.commit();
                         }
                     }
 
@@ -698,7 +711,7 @@ public class HSqlPrimerDesign {
             log.flush();
             System.gc();
         }
-        stat.execute("SET FILES LOG TRUE\n");
+        stat.execute("SET FILES LOG TRUE;");
         st.close();
         stat.close();
         System.out.println("Matches Submitted");
@@ -745,9 +758,9 @@ public class HSqlPrimerDesign {
                             for (int i = 0; i < 4; i++) {
                                 String primer = primers.get(i);
                                 for (String clustphage : clustphages) {
-                                    if (CSV.readCSV(base + "/PhageData/" +Integer.toString(bps)
+                                    if (!CSV.readCSV(base + "/PhageData/" + Integer.toString(bps)
                                             + clustphage + ".csv")
-                                            .contains(primer) != true)
+                                            .contains(primer))
                                         log.println("Problem " + z);
                                 }
                             }
@@ -758,9 +771,9 @@ public class HSqlPrimerDesign {
                             for (int i = 0; i < 4; i++) {
                                 String primer = primers.get(i);
                                 for (String nonclustphage : nonclustphages) {
-                                    if (CSV.readCSV(base + "/PhageData/" +Integer.toString(bps)
+                                    if (CSV.readCSV(base + "/PhageData/" + Integer.toString(bps)
                                             + nonclustphage + ".csv")
-                                            .contains(primer) != false)
+                                            .contains(primer))
                                         log.println("Problem " + z);
                                 }
                             }
@@ -835,4 +848,16 @@ public class HSqlPrimerDesign {
             Tm = tm;
         }
     }
+    private static class Matches{
+        Primer one;
+        Primer two;
+        DescriptiveStatistics stats;
+        public Matches(Primer primer1, Primer primer2, double[] arr){
+            one=primer1;
+            two=primer2;
+            stats=new DescriptiveStatistics(arr);
+        }
+
+    }
+
 }

@@ -65,11 +65,11 @@ public class Cluster {
         }
         Map<String, List<String[]>> collect = list.full.stream()
                 .collect(Collectors.groupingBy(l -> l[0]));
-        Map<String, Set<CharSequence>> clusters = collect.entrySet().parallelStream()
+        Map<String, Set<String>> clusters = collect.entrySet().parallelStream()
                 .map(x -> {
                     List<String> mapEntryValues = getPhageNames(x);
                     String firstName = mapEntryValues.get(0);
-                    Set<CharSequence> clusterSet = CSV.readCSV(base + "\\PhageData\\" + firstName + ".csv");
+                    Set<String> clusterSet = CSV.readCSV(base + "\\PhageData\\" + firstName + ".csv");
 
                     x.getValue().stream().skip(1).forEach(y -> {
                                 clusterSet.retainAll(CSV.readCSV(base + "\\PhageData\\" + y[1] + ".csv"));
@@ -119,7 +119,7 @@ public class Cluster {
         Map<String, List<String[]>> collect = list.full.stream()
                 .collect(Collectors.groupingBy(l -> l[0]));
         commonFiles.stream().forEach(x -> {
-            Set<CharSequence> common = CSV.readCSV(x.getAbsolutePath());
+            Set<String> common = CSV.readCSV(x.getAbsolutePath());
             String cluster = x.getAbsolutePath().substring(x.getAbsolutePath().indexOf("on\\") + 3,
                     x.getAbsolutePath().indexOf(".csv"));
             Set<String> clusterPhages = collect.get(cluster).stream().map(z -> z[1]).collect(Collectors.toSet());

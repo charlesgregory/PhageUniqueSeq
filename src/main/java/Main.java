@@ -55,11 +55,11 @@ public class Main {
             HSqlPrimerDesign.main(args);
         }
         else if(args[0].equals("-test")){
-            try {
-                Test.main(args);
-            } catch (CompoundNotFoundException e) {
-                e.printStackTrace();
-            }
+//            try {
+//                Test.main(args);
+//            } catch (CompoundNotFoundException e) {
+//                e.printStackTrace();
+//            }
         }
         else if(args[0].equals("-clear")){
             Update.main(args);

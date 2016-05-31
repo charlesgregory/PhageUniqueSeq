@@ -24,6 +24,11 @@ dependencies {
     compile 'net.java.dev.jna:jna-platform:4.2.1'
     compile 'com.nativelibs4java:bridj:0.6.2'
     compile 'com.nativelibs4java:jnaerator:0.12'
+    // http://mvnrepository.com/artifact/org.apache.commons/commons-lang3
+    compile group: 'org.apache.commons', name: 'commons-lang3', version: '3.4'
+    // http://mvnrepository.com/artifact/org.apache.commons/commons-math3
+    compile group: 'org.apache.commons', name: 'commons-math3', version: '3.6'
+
 
 
 

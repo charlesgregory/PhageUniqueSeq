@@ -57,7 +57,7 @@ public class Fasta {
     /**Splits the fasta sequence into a set of every possible
     //sequence of a certain size which can be found in the sequence
     including the reverse strand*/
-    private static Set<CharSequence> splitFasta(String[] seq, int length){
+    public static Set<CharSequence> splitFasta(String[] seq, int length){
 
         Set<CharSequence> collect = IntStream.range(0, length).mapToObj(start -> {
             List<CharSequence> primers = new ArrayList<>();
@@ -110,8 +110,10 @@ public class Fasta {
         name = base+"/Fastas/"+name+".fasta";
         File file = new File(name);
         try {
-            URL netPath = new URL(path);
-            FileUtils.copyURLToFile(netPath,file);
+            if(!file.exists()) {
+                URL netPath = new URL(path);
+                FileUtils.copyURLToFile(netPath, file);
+            }
         } catch (IOException e) {
             e.printStackTrace();
         }

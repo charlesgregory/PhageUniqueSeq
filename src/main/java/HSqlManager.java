@@ -1,3 +1,5 @@
+import org.apache.commons.lang3.builder.HashCodeBuilder;
+
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
@@ -25,6 +27,7 @@ import java.util.stream.Collectors;
  * Created by Thomas on 3/1/2016.
  * Manages HSQL Database
  */
+@SuppressWarnings("Duplicates")
 public class HSqlManager {
     static final String JDBC_DRIVER_HSQL = "org.hsqldb.jdbc.JDBCDriver";
     static final String DB_SERVER_URL ="jdbc:hsqldb:hsql://localhost/primerdb;ifexists=true";
@@ -117,6 +120,10 @@ public class HSqlManager {
                 "\tPrimer VARCHAR(45) NOT NULL,\n" +
                 "\tPrimerMatch VARCHAR(45) NOT NULL,\n" +
                 "\tComp FLOAT NULL,\n" +
+                "\tFragAVG FLOAT NULL,\n" +
+                "\tFragVAR FLOAT NULL,\n" +
+                "\tH2SD FLOAT NULL,\n" +
+                "\tL2SD FLOAT NULL,\n" +
                 "\tStrain VARCHAR(45) NOT NULL,\n" +
                 "\tCluster VARCHAR(45) NOT NULL,\n" +
                 "\tPRIMARY KEY (id))\n" +
@@ -127,7 +134,7 @@ public class HSqlManager {
                 "\tStrain VARCHAR(45) NOT NULL,\n" +
                 "\tPRIMARY KEY (Name))\n";
         init.executeUpdate(start2);
-        init.executeUpdate("SET FILES NIO SIZE 4096 ");
+        init.executeUpdate("SET FILES NIO SIZE 8192 ");
         init.executeUpdate("CREATE INDEX a on primerdb.primers(Cluster)");
         init.executeUpdate("CREATE INDEX b on primerdb.primers(Strain)");
         init.executeUpdate("CREATE INDEX c on primerdb.primers(Sequence)");
@@ -218,7 +225,7 @@ public class HSqlManager {
                             List<String> clustphages = phages.stream()
                                     .filter(a -> a[0].equals(x) && a[1].equals(z)).map(a -> a[2])
                                     .collect(Collectors.toList());
-                            Set<CharSequence> primers = Collections.synchronizedSet(
+                            Set<String> primers = Collections.synchronizedSet(
                                     CSV.readCSV(base + "/PhageData/"+Integer.toString(bps)
                                             + clustphages.get(0) + ".csv"));
                             clustphages.remove(0);
@@ -533,10 +540,11 @@ public class HSqlManager {
     }
     @SuppressWarnings("Duplicates")
     private static void mycoCommonInitialize(int bps, Connection connection) throws SQLException, IOException {
+        long time = System.currentTimeMillis();
         String base = new File("").getAbsolutePath();
         CSV.makeDirectory(new File(base + "/PhageData"));
         INSTANCE =ImportPhagelist.getInstance();
-        INSTANCE.parseAllPhages(bps);
+//        INSTANCE.parseAllPhages(bps);
         written = true;
         Connection db = connection;
         db.setAutoCommit(false);
@@ -560,57 +568,91 @@ public class HSqlManager {
         }
         call.close();
         String x = strain;
-        phages.stream().filter(y->y[0].equals(x)).map(y->y[1]).collect(Collectors.toSet())
-                .parallelStream().forEach(z->{
+        Set<String> clust = phages.stream().filter(y -> y[0].equals(x)).map(y -> y[1]).collect(Collectors.toSet());
+        Map<String, List<String>> clusters = new HashMap<>();
+        clust.parallelStream().forEach(cluster-> clusters.put(cluster,
+                phages.stream()
+                .filter(a -> a[0].equals(x) && a[1].equals(cluster))
+                        .map(a -> a[2])
+                .collect(Collectors.toList())));
+        for(String z:clusters.keySet()) {
+            try {
+                List<String> clustphages = clusters.get(z);
+                Set<String> primers = Collections.synchronizedSet(
+                        CSV.readCSV(base + "/PhageData/" + Integer.toString(bps)
+                                + clustphages.get(0) + ".csv"));
+                clustphages.remove(0);
+                for (String phage : clustphages) {
+//                    String[] seqs = Fasta.parse(base + "/Fastas/" + phage + ".fasta");
+//                    String sequence =seqs[0]+seqs[1];
+//                    Map<String, List<Integer>> seqInd = new HashMap<>();
+//                    for (int i = 0; i <= sequence.length()-bps; i++) {
+//                        String sub=sequence.substring(i,i+bps);
+//                        if(seqInd.containsKey(sub)){
+//                            seqInd.get(sub).add(i);
+//                        }else {
+//                            List<Integer> list = new ArrayList<>();
+//                            list.add(i);
+//                            seqInd.put(sub,list);
+//                        }
+//                    }
+//                    primers = primers.stream().filter(seqInd::containsKey).collect(Collectors.toSet());
+//                    primers =Sets.intersection(primers,CSV.readCSV(base + "/PhageData/"+Integer.toString(bps)
+//                            + phage + ".csv"));
+//                    System.gc();
+//                            String[] seqs = Fasta.parse(base + "/Fastas/" + phage + ".fasta");
+//                            String sequence =seqs[0]+seqs[1];
+//                            primers.stream().filter(sequence::contains);
+                    primers.retainAll(CSV.readCSV(base + "/PhageData/"+Integer.toString(bps)
+                            + phage + ".csv"));
+//                    Set<CharSequence> prim = primers;
+//                    for (CharSequence primer: primers){
+//                        if(seqInd.containsKey(primer)){
+//                            prim.remove(primer);
+//                        }
+//                    }
+//                    primers=prim;
+                }
+                int i = 0;
+                for (String a : primers) {
                     try {
-                        List<String> clustphages = phages.stream()
-                                .filter(a -> a[0].equals(x) && a[1].equals(z)).map(a -> a[2])
-                                .collect(Collectors.toList());
-                        Set<CharSequence> primers = Collections.synchronizedSet(
-                                CSV.readCSV(base + "/PhageData/"+Integer.toString(bps)
-                                        + clustphages.get(0) + ".csv"));
-                        clustphages.remove(0);
-                        clustphages.parallelStream().forEach(phage->{
-                            primers.retainAll(CSV.readCSV(base + "/PhageData/"+Integer.toString(bps)
-                                    + phage + ".csv"));
-                        });
-                        int i = 0;
-                        for (CharSequence a : primers) {
-                            try {
-                                //finish update
-                                st.setInt(1, bps);
-                                st.setString(2, a.toString());
-                                st.setString(3, x);
-                                st.setString(4, z);
-                                st.addBatch();
-                            } catch (SQLException e) {
-                                e.printStackTrace();
-                                System.out.println("Error occurred at " + x + " " + z);
-                            }
-                            i++;
-                            if (i == 1000) {
-                                i = 0;
-                                st.executeBatch();
-                                db.commit();
-                            }
-                        }
-                        if (i>0) {
-                            st.executeBatch();
-                            db.commit();
-                        }
-                    }catch (SQLException e){
+                        //finish update
+                        st.setInt(1, bps);
+                        st.setString(2, a);
+                        st.setString(3, x);
+                        st.setString(4, z);
+                        st.addBatch();
+                    } catch (SQLException e) {
                         e.printStackTrace();
                         System.out.println("Error occurred at " + x + " " + z);
                     }
-                });
+                    i++;
+                    if (i == 1000) {
+                        i = 0;
+                        st.executeBatch();
+                        db.commit();
+                    }
+                }
+                if (i>0) {
+                    st.executeBatch();
+                    db.commit();
+                }
+            }catch (SQLException e){
+                e.printStackTrace();
+                System.out.println("Error occurred at " + x + " " + z);
+            }
+            System.out.println(z);
+        }
         stat.execute("SET FILES LOG TRUE\n");
         st.close();
         stat.close();
         System.out.println("Common Updated");
+        System.out.println((System.currentTimeMillis()-time ) / Math.pow(10, 3)/60);
     }
     @SuppressWarnings("Duplicates")
     public static void mycoUniqueDB(Connection connection, int bps) throws ClassNotFoundException,
             SQLException, InstantiationException, IllegalAccessException, IOException {
+        long time = System.currentTimeMillis();
         DpalLoad.main(new String[1]);
         HSqlPrimerDesign.Dpal_Inst = DpalLoad.INSTANCE_WIN64;
         String base = new File("").getAbsolutePath();
@@ -642,70 +684,252 @@ public class HSqlManager {
         }
         call.close();
         String x = strain;
-        phages.stream().filter(y->y[0].equals(x)).map(y->y[1]).collect(Collectors.toSet())
-                .parallelStream().forEach(z->{
-                    try {
-                        Set<String> nonclustphages = phages.stream()
-                                .filter(a -> a[0].equals(x) && !a[1].equals(z)).map(a -> a[2])
-                                .collect(Collectors.toSet());
-                        ResultSet resultSet = stat.executeQuery("Select Sequence from primerdb.primers" +
-                                " where Strain ='"+x+"' and Cluster ='"+z+"' and CommonP = true" +
-                                " and Bp = "+Integer.valueOf(bps)+" ");
-                        Set<CharSequence> primers = Collections.synchronizedSet(new HashSet<>());
-                        while (resultSet.next()){
-                            primers.add(resultSet.getString("Sequence"));
-                        }
-                        resultSet.close();
-                        for (String phage : nonclustphages) {
-                            CSV.readCSV(base + "/PhageData/"+Integer.toString(bps)
-                                    + phage + ".csv").parallelStream()
-                                    .filter(primer -> primers.contains(primer))
-                                    .forEach(primers::remove);
+        Set<String> clust = phages.stream().filter(y -> y[0].equals(x)).map(y -> y[1]).collect(Collectors.toSet());
+        String[] clusters =clust.toArray(new String[clust.size()]);
+        for (String z:clusters){
+            try {
+                Set<String> nonclustphages = phages.stream()
+                        .filter(a -> a[0].equals(x) && !a[1].equals(z)).map(a -> a[2])
+                        .collect(Collectors.toSet());
+                ResultSet resultSet = stat.executeQuery("Select Sequence from primerdb.primers" +
+                        " where Strain ='"+x+"' and Cluster ='"+z+"' and CommonP = true" +
+                        " and Bp = "+Integer.valueOf(bps)+" ");
+                Set<CharSequence> primers = Collections.synchronizedSet(new HashSet<>());
+                while (resultSet.next()){
+                    primers.add(resultSet.getString("Sequence"));
+                }
+                resultSet.close();
+                for (String phage : nonclustphages) {
+//                    String[] seqs = Fasta.parse(base + "/Fastas/" + phage + ".fasta");
+//                    String sequence =seqs[0]+seqs[1];
+//                        Map<String, List<Integer>> seqInd = new HashMap<>();
+//                        for (int i = 0; i <= sequence.length()-bps; i++) {
+//                            String sub=sequence.substring(i,i+bps);
+//                            if(seqInd.containsKey(sub)){
+//                                seqInd.get(sub).add(i);
+//                            }else {
+//                                List<Integer> list = new ArrayList<>();
+//                                list.add(i);
+//                                seqInd.put(sub,list);
+//                            }
+//                        }
+//                    primers = primers.stream().filter(primer->!seqInd.containsKey(primer)).collect(Collectors.toSet());
+//                    primers =Sets.difference(primers,CSV.readCSV(base + "/PhageData/"+Integer.toString(bps)
+//                                    + phage + ".csv"));
+                    CSV.readCSV(base + "/PhageData/"+Integer.toString(bps)
+                            + phage + ".csv").stream()
+                            .filter(primers::contains)
+                            .forEach(primers::remove);
+//                    System.gc();
 
-                        }
-                        int i = 0;
-                        for (CharSequence a : primers) {
-                            try {
-                                st.setDouble(1,HSqlPrimerDesign.primerTm(a,0,800,1.5,0.2));
-                                st.setDouble(2,HSqlPrimerDesign.gcContent(a));
-                                st.setBoolean(3,HSqlPrimerDesign.calcHairpin((String)a,4));
-                                st.setString(4, z);
-                                st.setString(5, x);
-                                st.setString(6, a.toString());
-                                st.setInt(7, bps);
-                                st.addBatch();
-                            } catch (SQLException e) {
-                                e.printStackTrace();
-                                System.out.println("Error occurred at " + x + " " + z);
-                            }
-                            i++;
-                            if (i == 1000) {
-                                i = 0;
-                                st.executeBatch();
-                                db.commit();
-                            }
-                        }
-                        if (i>0) {
-                            st.executeBatch();
-                            db.commit();
-                        }
-                    }catch (SQLException e){
+                }
+                int i = 0;
+                for (CharSequence a : primers) {
+                    try {
+                        st.setDouble(1,HSqlPrimerDesign.primerTm(a,0,800,1.5,0.2));
+                        st.setDouble(2,HSqlPrimerDesign.gcContent(a));
+                        st.setBoolean(3,HSqlPrimerDesign.calcHairpin((String)a,4));
+                        st.setString(4, z);
+                        st.setString(5, x);
+                        st.setString(6, a.toString());
+                        st.setInt(7, bps);
+                        st.addBatch();
+                    } catch (SQLException e) {
                         e.printStackTrace();
                         System.out.println("Error occurred at " + x + " " + z);
                     }
-                    log.println(z);
-                    log.flush();
-                    System.gc();
-                });
+                    i++;
+                    if (i == 1000) {
+                        i = 0;
+                        st.executeBatch();
+                        db.commit();
+                    }
+                }
+                if (i>0) {
+                    st.executeBatch();
+                    db.commit();
+                }
+            }catch (SQLException e){
+                e.printStackTrace();
+                System.out.println("Error occurred at " + x + " " + z);
+            }
+            log.println(z);
+            log.flush();
+            System.gc();
+        }
         stat.execute("SET FILES LOG TRUE\n");
         st.close();
         stat.close();
         System.out.println("Unique Updated");
+        System.out.println((System.currentTimeMillis()-time ) / Math.pow(10, 3)/60);
+    }
+    public static void primerAnalysis(Connection connection, int bps) throws SQLException, IOException {
+        long time = System.currentTimeMillis();
+        DpalLoad.main(new String[1]);
+        HSqlPrimerDesign.Dpal_Inst = DpalLoad.INSTANCE_WIN64;
+        String base = new File("").getAbsolutePath();
+        CSV.makeDirectory(new File(base + "/PhageData"));
+        INSTANCE =ImportPhagelist.getInstance();
+        INSTANCE.parseAllPhages(bps);
+        System.out.println((System.currentTimeMillis()-time ) / Math.pow(10, 3)/60);
+        time = System.currentTimeMillis();
+        written = true;
+        Connection db = connection;
+        db.setAutoCommit(false);
+        Statement stat = db.createStatement();
+        stat.execute("SET FILES LOG FALSE\n");
+//        PreparedStatement st = db.prepareStatement("Insert INTO Primerdb.Primers" +
+//                "(Bp,Sequence, CommonP, UniqueP, Picked, Strain, Cluster)" +
+//                " Values(?,?,true,false,false,?,?)");
+        PreparedStatement st = db.prepareStatement("INSERT INTO Primerdb.Primers" +
+                "(Bp,Sequence,Strain,Cluster,Tm,GC,UniqueP,CommonP,Hairpin) " +
+                "VALUES(?,?,?,?,?,?,true,true,?)");
+        ResultSet call = stat.executeQuery("Select * From Primerdb.Phages;");
+        List<String[]> phages = new ArrayList<>();
+        String strain = "";
+        while (call.next()) {
+            String[] r = new String[3];
+            r[0]=call.getString("Strain");
+            r[1]=call.getString("Cluster");
+            r[2]=call.getString("Name");
+            phages.add(r);
+            if(r[2].equals("xkcd")) {
+                strain = r[0];
+            }
+        }
+        call.close();
+        String x = strain;
+        Set<String> clust = phages.stream().filter(y -> y[0].equals(x)).map(y -> y[1]).collect(Collectors.toSet());
+        Map<String, Integer> clustersNum = new HashMap<>();
+        Map<Integer, String> clustersName = new HashMap<>();
+        Map<Integer, List<String>> clusters = new HashMap<>();
+        Map<Bytes,Primer> primers = new HashMap<>();
+        int i=0;
+        for(String cluster:clust){
+            clustersName.put(i,cluster);
+            clustersNum.put(cluster,i);
+            i++;
+        }
+        clust.parallelStream().forEach(cluster-> clusters.put(clustersNum.get(cluster),
+                phages.stream()
+                        .filter(a -> a[0].equals(x) && a[1].equals(cluster))
+                        .map(a -> a[2])
+                        .collect(Collectors.toList())));
+        for(int z:clusters.keySet()) {
+//            try {
+            List<String> clustphages = clusters.get(z);
+            for (String phage : clustphages) {
+                Set<Bytes> phagprimers =
+                        //Read from CSV file here
+                        //Premade CSV files of all possible
+                        //primers in a phage genome
+                        CSV.readCSV(base + "/PhageData/" + Integer.toString(bps)
+                                + phage + ".csv").stream().map(l-> new Bytes(l.getBytes())).collect(Collectors.toSet());
+                for (Bytes primer : phagprimers) {
+                    if (!primers.containsKey(primer)) {
+                        primers.put(primer, new Primer(z));
+                    } else {
+                        Primer select = primers.get(primer);
+                        select.phageCount++;
+                        if(!select.containsCluster(z)){
+                            select.addCluster(z);
+                        }
+                    }
+
+                }
+
+            }
+            System.out.println(clustersName.get(z));
+        }
+        int count=0;
+        Iterator<Map.Entry<Bytes, Primer>> primersSet = primers.entrySet().iterator();
+        while (primersSet.hasNext()){
+            Map.Entry<Bytes, Primer> primer = primersSet.next();
+            Primer primerInf = primer.getValue();
+            if(primerInf.clusters.length!=1){
+                primer.setValue(null);
+            }else{
+                int primerClust=-1;
+                for(int cluster:primerInf.clusters){
+                    primerClust=cluster;
+                }
+                if(primerInf.phageCount!=clusters.get(primerClust).size()){
+                    primer.setValue(null);
+                }else{
+                    count++;
+                }
+            }
+        }
+        System.out.print("Unique Count: ");
+        System.out.println(count);
+        System.out.print("Primer Count: ");
+        System.out.println(primers.size());
+//        Set<String>dbPrimers= new HashSet<>();
+//        ResultSet resultSet = stat.executeQuery("SELECT * FROM primerdb.primers WHERE UNIQUEP=TRUE and Bp=" + bps);
+//        while (resultSet.next()){
+//            dbPrimers.add(resultSet.getString("Sequence"));
+//        }
+//        primersSet = primers.entrySet().iterator();
+//        while (primersSet.hasNext()){
+//            Map.Entry<String, Primer> primer = primersSet.next();
+//            Primer primerInf = primer.getValue();
+//            if(primerInf!=null){
+//                if(!dbPrimers.contains(primer.getKey())){
+//                    String primerClust="";
+//                    for(String cluster:primerInf.clusters){
+//                        primerClust=cluster;
+//                    }
+//                    System.out.println(primerClust);
+//                }
+//            }
+//        }
+        i = 0;
+        for (Bytes a : primers.keySet()) {
+            Primer primerInf = primers.get(a);
+            if(primerInf!=null) {
+                String primerClust="";
+                for(int cluster:primerInf.clusters){
+                    primerClust=clustersName.get(cluster);
+                }
+                String str = new String(a.bytes);
+                try {
+                    st.setInt(1, bps);
+                    st.setString(2, str);
+                    st.setString(3, x);
+                    st.setString(4, primerClust);
+                    st.setDouble(5,HSqlPrimerDesign.primerTm(str,0,800,1.5,0.2));
+                    st.setDouble(6,HSqlPrimerDesign.gcContent(str));
+                    st.setBoolean(7,HSqlPrimerDesign.calcHairpin(str,4));
+                    st.addBatch();
+                } catch (SQLException e) {
+                    e.printStackTrace();
+                    System.out.println("Error occurred at " + x + " " + primerClust);
+                }
+                i++;
+                if (i == 1000) {
+                    i = 0;
+                    st.executeBatch();
+                    db.commit();
+                }
+            }
+        }
+        if (i>0) {
+            st.executeBatch();
+            db.commit();
+        }
+
+//        }
+        stat.execute("SET FILES LOG TRUE;");
+        st.close();
+        stat.close();
+        System.out.println("Unique Updated");
+        System.out.println((System.currentTimeMillis()-time ) / Math.pow(10, 3)/60);
     }
     public static void runNewMycoBP(Connection connection, int bps) throws IOException,
             SQLException, InstantiationException, IllegalAccessException, ClassNotFoundException {
-        mycoCommonInitialize(bps,connection);
-        mycoUniqueDB(connection,bps);
+//        mycoCommonInitialize(bps,connection);
+//        mycoUniqueDB(connection,bps);
+        primerAnalysis(connection,bps);
 //        HSqlPrimerDesign.primerPicks(connection,bps);
 //        connection.createStatement().execute("SHUTDOWN");
     }
@@ -713,5 +937,60 @@ public class HSqlManager {
         Connection db = connection;
         Statement stmt = db.createStatement();
         stmt.execute("TRUNCATE SCHEMA Primerdb RESTART IDENTITY AND COMMIT NO CHECK");
+    }
+    //Key object for unique sequence map
+    private static class Bytes{
+        byte[] bytes;
+        Bytes(byte[] b){
+            bytes=b;
+        }
+        @Override
+        public int hashCode() {
+            return new HashCodeBuilder(17, 31). // two randomly chosen prime numbers
+                    // if deriving: appendSuper(super.hashCode()).
+                            append(bytes).
+                            toHashCode();
+        }
+
+        @Override
+        public boolean equals(Object obj) {
+            if (!(obj instanceof Bytes))
+                return false;
+            if (obj == this)
+                return true;
+
+            Bytes rhs = (Bytes) obj;
+//            return new EqualsBuilder().
+//                    // if deriving: appendSuper(super.equals(obj)).
+//                            append(bytes, rhs.bytes).
+//                            isEquals();
+            return Arrays.equals(bytes,rhs.bytes);
+        }
+    }
+    //entry object that stores the data of the key in the unique sequence map
+    private static class Primer{
+        int[] clusters;
+        int phageCount;
+        Primer(int cluster){
+            clusters = new int[1];
+            addCluster(cluster);
+            phageCount=1;
+        }
+        public boolean containsCluster(int cluster){
+            for(int i=0;i<clusters.length;i++){
+                if(clusters[i]== cluster){
+                    return true;
+                }
+            }
+            return false;
+        }
+        public void addCluster(int cluster){
+            int[] temp = new int[phageCount+1];
+            for(int i =0;i<clusters.length;i++){
+                temp[i]=clusters[i];
+            }
+            clusters=temp;
+            clusters[phageCount++]=cluster;
+        }
     }
 }

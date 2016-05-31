@@ -42,12 +42,15 @@ public class Main {
         else if(args[0].equals("-build")){
             HSqlManager.main(args);
         }
-        else if(args[0].equals("-myco")){
-            MycoUpdate.main(args);
+        else if(args[0].equals("-update")){
+            Update.main(args);
         }
-        else if(args[0].equals("-arthro")){
-            ArthroUpdate.main(args);
-        }
+//        else if(args[0].equals("-myco")){
+//            MycoUpdate.main(args);
+//        }
+//        else if(args[0].equals("-arthro")){
+//            ArthroUpdate.main(args);
+//        }
 //        else if(args[0].equals("-update")){
 //            Update.main(args);
 //        }

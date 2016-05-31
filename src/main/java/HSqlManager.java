@@ -759,7 +759,7 @@ public class HSqlManager {
         System.out.println("Unique Updated");
         System.out.println((System.currentTimeMillis()-time ) / Math.pow(10, 3)/60);
     }
-    public static void primerAnalysis(Connection connection, int bps,String strain) throws SQLException, IOException {
+    public static void primerAnalysis(Connection connection, int bps) throws SQLException, IOException {
         long time = System.currentTimeMillis();
         DpalLoad.main(new String[1]);
         HSqlPrimerDesign.Dpal_Inst = DpalLoad.INSTANCE_WIN64;
@@ -788,157 +788,145 @@ public class HSqlManager {
             r[1]=call.getString("Cluster");
             r[2]=call.getString("Name");
             phages.add(r);
-            if(strain.equals("-myco")) {
-                if (r[2].equals("xkcd")) {
-                    strain = r[0];
-                }
-            }else if(strain.equals("-arthro")){
-                if (r[2].equals("ArV1")) {
-                    strain = r[0];
-                }
-            }
+
+//            if(strain.equals("-myco")) {
+//                if (r[2].equals("xkcd")) {
+//                    strain = r[0];
+//                }
+//            }else if(strain.equals("-arthro")){
+//                if (r[2].equals("ArV1")) {
+//                    strain = r[0];
+//                }
+//            }
         }
         call.close();
-        String x = strain;
-        Set<String> clust = phages.stream().filter(y -> y[0].equals(x)).map(y -> y[1]).collect(Collectors.toSet());
-        Map<String, Integer> clustersNum = new HashMap<>();
-        Map<Integer, String> clustersName = new HashMap<>();
-        Map<Integer, List<String>> clusters = new HashMap<>();
-        Map<Bytes,Primer> primers = new HashMap<>();
-        int i=0;
-        for(String cluster:clust){
-            clustersName.put(i,cluster);
-            clustersNum.put(cluster,i);
-            i++;
-        }
-        clust.parallelStream().forEach(cluster-> clusters.put(clustersNum.get(cluster),
-                phages.stream()
-                        .filter(a -> a[0].equals(x) && a[1].equals(cluster))
-                        .map(a -> a[2])
-                        .collect(Collectors.toList())));
-        for(int z:clusters.keySet()) {
+
+        Set<String>strains = phages.stream().map(y->y[0]).collect(Collectors.toSet());
+        for(String x:strains) {
+            Set<String> clust = phages.stream().filter(y -> y[0].equals(x)).map(y -> y[1]).collect(Collectors.toSet());
+            Map<String, Integer> clustersNum = new HashMap<>();
+            Map<Integer, String> clustersName = new HashMap<>();
+            Map<Integer, List<String>> clusters = new HashMap<>();
+            Map<Bytes, Primer> primers = new HashMap<>();
+            int i = 0;
+            for (String cluster : clust) {
+                clustersName.put(i, cluster);
+                clustersNum.put(cluster, i);
+                i++;
+            }
+            clust.parallelStream().forEach(cluster -> clusters.put(clustersNum.get(cluster),
+                    phages.stream()
+                            .filter(a -> a[0].equals(x) && a[1].equals(cluster))
+                            .map(a -> a[2])
+                            .collect(Collectors.toList())));
+            for (int z : clusters.keySet()) {
 //            try {
-            List<String> clustphages = clusters.get(z);
-            for (String phage : clustphages) {
-                Set<Bytes> phagprimers =
-                        //Read from CSV file here
-                        //Premade CSV files of all possible
-                        //primers in a phage genome
-                        CSV.readCSV(base + "/PhageData/" + Integer.toString(bps)
-                                + phage + ".csv").stream().map(l-> new Bytes(l.getBytes())).collect(Collectors.toSet());
-                for (Bytes primer : phagprimers) {
-                    if (!primers.containsKey(primer)) {
-                        primers.put(primer, new Primer(z));
-                    } else {
-                        Primer select = primers.get(primer);
-                        select.phageCount++;
-                        if(!select.containsCluster(z)){
-                            select.addCluster(z);
+                List<String> clustphages = clusters.get(z);
+                for (String phage : clustphages) {
+                    Set<Bytes> phagprimers =
+                            //Read from CSV file here
+                            //Premade CSV files of all possible
+                            //primers in a phage genome
+                            CSV.readCSV(base + "/PhageData/" + Integer.toString(bps)
+                                    + phage + ".csv").stream().map(l -> new Bytes(l.getBytes())).collect(Collectors.toSet());
+                    for (Bytes primer : phagprimers) {
+                        if (!primers.containsKey(primer)) {
+                            primers.put(primer, new Primer(z));
+                        } else {
+                            Primer select = primers.get(primer);
+                            select.phageCount++;
+                            if (!select.containsCluster(z)) {
+                                select.addCluster(z);
+                            }
                         }
+
                     }
 
                 }
-
+                System.out.println(clustersName.get(z));
             }
-            System.out.println(clustersName.get(z));
-        }
-        int count=0;
-        Iterator<Map.Entry<Bytes, Primer>> primersSet = primers.entrySet().iterator();
-        while (primersSet.hasNext()){
-            Map.Entry<Bytes, Primer> primer = primersSet.next();
-            Primer primerInf = primer.getValue();
-            if(primerInf.clusters.length!=1){
-                primer.setValue(null);
-            }else{
-                int primerClust=-1;
-                for(int cluster:primerInf.clusters){
-                    primerClust=cluster;
-                }
-                if(primerInf.phageCount!=clusters.get(primerClust).size()){
+            int count = 0;
+            Iterator<Map.Entry<Bytes, Primer>> primersSet = primers.entrySet().iterator();
+            while (primersSet.hasNext()) {
+                Map.Entry<Bytes, Primer> primer = primersSet.next();
+                Primer primerInf = primer.getValue();
+                if (primerInf.clusters.length != 1) {
                     primer.setValue(null);
-                }else{
-                    count++;
+                } else {
+                    int primerClust = -1;
+                    for (int cluster : primerInf.clusters) {
+                        primerClust = cluster;
+                    }
+                    if (primerInf.phageCount != clusters.get(primerClust).size()) {
+                        primer.setValue(null);
+                    } else {
+                        count++;
+                    }
                 }
             }
-        }
-        System.out.print("Unique Count: ");
-        System.out.println(count);
-        System.out.print("Primer Count: ");
-        System.out.println(primers.size());
-//        Set<String>dbPrimers= new HashSet<>();
-//        ResultSet resultSet = stat.executeQuery("SELECT * FROM primerdb.primers WHERE UNIQUEP=TRUE and Bp=" + bps);
-//        while (resultSet.next()){
-//            dbPrimers.add(resultSet.getString("Sequence"));
-//        }
-//        primersSet = primers.entrySet().iterator();
-//        while (primersSet.hasNext()){
-//            Map.Entry<String, Primer> primer = primersSet.next();
-//            Primer primerInf = primer.getValue();
-//            if(primerInf!=null){
-//                if(!dbPrimers.contains(primer.getKey())){
-//                    String primerClust="";
-//                    for(String cluster:primerInf.clusters){
-//                        primerClust=cluster;
-//                    }
-//                    System.out.println(primerClust);
-//                }
-//            }
-//        }
-        i = 0;
-        for (Bytes a : primers.keySet()) {
-            Primer primerInf = primers.get(a);
-            if(primerInf!=null) {
-                String primerClust="";
-                for(int cluster:primerInf.clusters){
-                    primerClust=clustersName.get(cluster);
-                }
-                String str = new String(a.bytes);
-                try {
-                    st.setInt(1, bps);
-                    st.setString(2, str);
-                    st.setString(3, x);
-                    st.setString(4, primerClust);
-                    st.setDouble(5,HSqlPrimerDesign.primerTm(str,0,800,1.5,0.2));
-                    st.setDouble(6,HSqlPrimerDesign.gcContent(str));
-                    st.setBoolean(7,HSqlPrimerDesign.calcHairpin(str,4));
-                    st.addBatch();
-                } catch (SQLException e) {
-                    e.printStackTrace();
-                    System.out.println("Error occurred at " + x + " " + primerClust);
-                }
-                i++;
-                if (i == 1000) {
-                    i = 0;
-                    st.executeBatch();
-                    db.commit();
+            System.out.print("Unique Count: ");
+            System.out.println(count);
+            System.out.print("Primer Count: ");
+            System.out.println(primers.size());
+            i = 0;
+            for (Bytes a : primers.keySet()) {
+                Primer primerInf = primers.get(a);
+                if (primerInf != null) {
+                    String primerClust = "";
+                    for (int cluster : primerInf.clusters) {
+                        primerClust = clustersName.get(cluster);
+                    }
+                    String str = new String(a.bytes);
+                    try {
+                        st.setInt(1, bps);
+                        st.setString(2, str);
+                        st.setString(3, x);
+                        st.setString(4, primerClust);
+                        st.setDouble(5, HSqlPrimerDesign.primerTm(str, 0, 800, 1.5, 0.2));
+                        st.setDouble(6, HSqlPrimerDesign.gcContent(str));
+                        st.setBoolean(7, HSqlPrimerDesign.calcHairpin(str, 4));
+                        st.addBatch();
+                    } catch (SQLException e) {
+                        e.printStackTrace();
+                        System.out.println("Error occurred at " + x + " " + primerClust);
+                    }
+                    i++;
+                    if (i == 1000) {
+                        i = 0;
+                        st.executeBatch();
+                        db.commit();
+                    }
                 }
             }
-        }
-        if (i>0) {
-            st.executeBatch();
-            db.commit();
-        }
+            if (i > 0) {
+                st.executeBatch();
+                db.commit();
+            }
 
 //        }
+
+            System.out.println("Unique Updated");
+            System.out.println((System.currentTimeMillis() - time) / Math.pow(10, 3) / 60);
+        }
         stat.execute("SET FILES LOG TRUE;");
         st.close();
         stat.close();
-        System.out.println("Unique Updated");
-        System.out.println((System.currentTimeMillis()-time ) / Math.pow(10, 3)/60);
     }
+    @Deprecated
     public static void runNewMycoBP(Connection connection, int bps) throws IOException,
             SQLException, InstantiationException, IllegalAccessException, ClassNotFoundException {
 //        mycoCommonInitialize(bps,connection);
 //        mycoUniqueDB(connection,bps);
-        primerAnalysis(connection,bps,"-myco");
+        primerAnalysis(connection,bps);
 //        HSqlPrimerDesign.primerPicks(connection,bps);
 //        connection.createStatement().execute("SHUTDOWN");
     }
+    @Deprecated
     public static void runNewArthroBP(Connection connection, int bps) throws IOException,
             SQLException, InstantiationException, IllegalAccessException, ClassNotFoundException {
 //        mycoCommonInitialize(bps,connection);
 //        mycoUniqueDB(connection,bps);
-        primerAnalysis(connection,bps,"-arthro");
+        primerAnalysis(connection,bps);
 //        HSqlPrimerDesign.primerPicks(connection,bps);
 //        connection.createStatement().execute("SHUTDOWN");
     }

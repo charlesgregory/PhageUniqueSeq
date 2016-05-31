@@ -501,7 +501,7 @@ public class HSqlPrimerDesign {
         return tm;
     }
     @SuppressWarnings("Duplicates")
-    public static void locations(Connection connection, String strain) throws ClassNotFoundException,
+    public static void locations(Connection connection) throws ClassNotFoundException,
             SQLException, InstantiationException, IllegalAccessException, IOException {
         long time = System.nanoTime();
         String base = new File("").getAbsolutePath();
@@ -524,197 +524,199 @@ public class HSqlPrimerDesign {
             r[1]=call.getString("Cluster");
             r[2]=call.getString("Name");
             phages.add(r);
-            if(strain.equals("-myco")) {
-                if (r[2].equals("xkcd")) {
-                    strain = r[0];
-                }
-            }else if(strain.equals("-arthro")){
-                if (r[2].equals("ArV1")) {
-                    strain = r[0];
-                }
-            }
+//            if(strain.equals("-myco")) {
+//                if (r[2].equals("xkcd")) {
+//                    strain = r[0];
+//                }
+//            }else if(strain.equals("-arthro")){
+//                if (r[2].equals("ArV1")) {
+//                    strain = r[0];
+//                }
+//            }
         }
         call.close();
-        String x = strain;
-        Set<String> clust = phages.stream().filter(y -> y[0].equals(x)).map(y -> y[1]).collect(Collectors.toSet());
-        String[] clusters = clust.toArray(new String[clust.size()]);
+        Set<String>strains = phages.stream().map(y->y[0]).collect(Collectors.toSet());
+        for(String x:strains) {
+            Set<String> clust = phages.stream().filter(y -> y[0].equals(x)).map(y -> y[1]).collect(Collectors.toSet());
+            String[] clusters = clust.toArray(new String[clust.size()]);
 //        String z ="A1";
-        for(String z:clusters){
-            System.out.println("Starting:"+z);
-            List<Primer> primers = new ArrayList<>();
-            Set<Matches> matched= new HashSet<>();
-            Set<String> clustphage = phages.stream()
-                    .filter(a -> a[0].equals(x) && a[1].equals(z)).map(a -> a[2])
-                    .collect(Collectors.toSet());
-            String[] clustphages =clustphage.toArray(new String[clustphage.size()]);
-            if(clustphages.length>1) {
-                try {
-                    ResultSet resultSet = stat.executeQuery("Select * from primerdb.primers" +
-                            " where Strain ='" + x + "' and Cluster ='" + z + "' and UniqueP = true" +
-                            " and Hairpin = false");
-                    while (resultSet.next()) {
-                        Primer primer = new Primer(resultSet.getString("Sequence"));
-                        primer.setTm(resultSet.getDouble("Tm"));
-                        primers.add(primer);
-                    }
-                    resultSet.close();
-                } catch (SQLException e) {
-                    e.printStackTrace();
-                    System.out.println("Error occurred at " + x + " " + z);
-                }
-                System.out.println(primers.size());
-                Set<Primer> primerlist2 =primers.stream().collect(Collectors.toSet());
-                Primer[] primers2 =primerlist2.toArray(new Primer[primerlist2.size()]);
-                Map<String,Map<CharSequence,List<Integer>>> locations = Collections.synchronizedMap(
-                        new HashMap<>());
-                clustphage.stream().forEach(phage->{
-                    String[] seqs = Fasta.parse(base + "/Fastas/" + phage + ".fasta");
-                    String sequence =seqs[0]+seqs[1];
-                    Map<String, List<Integer>> seqInd = new HashMap<>();
-                    for (int i = 0; i <= sequence.length()-10; i++) {
-                        String sub=sequence.substring(i,i+10);
-                        if(seqInd.containsKey(sub)){
-                            seqInd.get(sub).add(i);
-                        }else {
-                            List<Integer> list = new ArrayList<>();
-                            list.add(i);
-                            seqInd.put(sub,list);
+            for (String z : clusters) {
+                System.out.println("Starting:" + z);
+                List<Primer> primers = new ArrayList<>();
+                Set<Matches> matched = new HashSet<>();
+                Set<String> clustphage = phages.stream()
+                        .filter(a -> a[0].equals(x) && a[1].equals(z)).map(a -> a[2])
+                        .collect(Collectors.toSet());
+                String[] clustphages = clustphage.toArray(new String[clustphage.size()]);
+                if (clustphages.length > 1) {
+                    try {
+                        ResultSet resultSet = stat.executeQuery("Select * from primerdb.primers" +
+                                " where Strain ='" + x + "' and Cluster ='" + z + "' and UniqueP = true" +
+                                " and Hairpin = false");
+                        while (resultSet.next()) {
+                            Primer primer = new Primer(resultSet.getString("Sequence"));
+                            primer.setTm(resultSet.getDouble("Tm"));
+                            primers.add(primer);
                         }
+                        resultSet.close();
+                    } catch (SQLException e) {
+                        e.printStackTrace();
+                        System.out.println("Error occurred at " + x + " " + z);
                     }
-                    Map<CharSequence, List<Integer>> alllocs = new HashMap<>();
-                    for (Primer primer : primers2) {
-                        List<Integer> locs = new ArrayList<>();
-                        String sequence1 = primer.getSequence();
-                        String frag = sequence1.substring(0,10);
-                        List<Integer> integers = seqInd.get(frag);
-                        if (integers != null) {
-                            for (Integer i :integers) {
-                                if ((sequence1.length() + i ) < sequence.length() &&
-                                        sequence.substring(i, sequence1.length() + i).equals(sequence1)) {
-                                    locs.add(i);
-                                }
+                    System.out.println(primers.size());
+                    Set<Primer> primerlist2 = primers.stream().collect(Collectors.toSet());
+                    Primer[] primers2 = primerlist2.toArray(new Primer[primerlist2.size()]);
+                    Map<String, Map<CharSequence, List<Integer>>> locations = Collections.synchronizedMap(
+                            new HashMap<>());
+                    clustphage.stream().forEach(phage -> {
+                        String[] seqs = Fasta.parse(base + "/Fastas/" + phage + ".fasta");
+                        String sequence = seqs[0] + seqs[1];
+                        Map<String, List<Integer>> seqInd = new HashMap<>();
+                        for (int i = 0; i <= sequence.length() - 10; i++) {
+                            String sub = sequence.substring(i, i + 10);
+                            if (seqInd.containsKey(sub)) {
+                                seqInd.get(sub).add(i);
+                            } else {
+                                List<Integer> list = new ArrayList<>();
+                                list.add(i);
+                                seqInd.put(sub, list);
                             }
                         }
-                        alllocs.put(sequence1,locs);
-                    }
-                    locations.put(phage,alllocs);
-                });
-                System.out.println("locations found");
-                System.out.println((System.nanoTime() - time) / Math.pow(10, 9)/60.0);
-                final int[] k= new int[] {0};
-                primerlist2.parallelStream().forEach(a->{
-                    int matches = 0;
-                    int i=0;
-                    while(primers2[i]!=a){
-                        i++;
-                    }
-                    for (int j = i+1;j<primers2.length;j++) {
-                        double[] frags = new double[clustphages.length];
-                        int phageCounter =0;
-                        Primer b =primers2[j];
-                        boolean match = true;
-                        if(matches>0){
-                            break;
+                        Map<CharSequence, List<Integer>> alllocs = new HashMap<>();
+                        for (Primer primer : primers2) {
+                            List<Integer> locs = new ArrayList<>();
+                            String sequence1 = primer.getSequence();
+                            String frag = sequence1.substring(0, 10);
+                            List<Integer> integers = seqInd.get(frag);
+                            if (integers != null) {
+                                for (Integer i : integers) {
+                                    if ((sequence1.length() + i) < sequence.length() &&
+                                            sequence.substring(i, sequence1.length() + i).equals(sequence1)) {
+                                        locs.add(i);
+                                    }
+                                }
+                            }
+                            alllocs.put(sequence1, locs);
                         }
-                        if(Math.abs(a.getTm() - b.getTm()) >5.0||
-                                a.getSequence().equals(b.getSequence())){
-                            continue;
+                        locations.put(phage, alllocs);
+                    });
+                    System.out.println("locations found");
+                    System.out.println((System.nanoTime() - time) / Math.pow(10, 9) / 60.0);
+                    final int[] k = new int[]{0};
+                    primerlist2.parallelStream().forEach(a -> {
+                        int matches = 0;
+                        int i = 0;
+                        while (primers2[i] != a) {
+                            i++;
                         }
-                        for(String phage:clustphages) {
-                            List<Integer> loc1 = locations.get(phage).get(a.getSequence());
-                            List<Integer> loc2 = locations.get(phage).get(b.getSequence());
+                        for (int j = i + 1; j < primers2.length; j++) {
+                            double[] frags = new double[clustphages.length];
+                            int phageCounter = 0;
+                            Primer b = primers2[j];
+                            boolean match = true;
+                            if (matches > 0) {
+                                break;
+                            }
+                            if (Math.abs(a.getTm() - b.getTm()) > 5.0 ||
+                                    a.getSequence().equals(b.getSequence())) {
+                                continue;
+                            }
+                            for (String phage : clustphages) {
+                                List<Integer> loc1 = locations.get(phage).get(a.getSequence());
+                                List<Integer> loc2 = locations.get(phage).get(b.getSequence());
 //                            if(loc1.size()==0){
 //                                System.out.println(phage+" "+a.getSequence());
 //                            }
-                            if(loc1.size()==0||loc2.size()==0){
-                                match=false;
-                                break;
-                            }
-                            boolean found = false;
-                            int l1 = loc1.get(0);
-                            int l2 = loc2.get(0);
-                            int count1 = 0;
-                            int count2 = 0;
-                            int frag = Math.abs(l1-l2);
-                            while (!found){
-                                if(frag>=500&&
-                                        frag<=2000){
-                                    found=true;
-                                    frags[phageCounter++]=frag+0.0;
-                                }else if(l1<l2 && frag<500){
-                                    count2++;
-                                }else if(l1>l2 && frag<500){
-                                    count1++;
-                                }else if(l1>l2 && frag>2000){
-                                    count2++;
-                                }else if(l1<l2 && frag>2000){
-                                    count1++;
-                                }else{
+                                if (loc1.size() == 0 || loc2.size() == 0) {
+                                    match = false;
                                     break;
                                 }
-                                if(count1<loc1.size()&&
-                                        count2<loc2.size()) {
-                                    l1 = loc1.get(count1);
-                                    l2 = loc2.get(count2);
-                                    frag = Math.abs(l1-l2);
-                                }else{
+                                boolean found = false;
+                                int l1 = loc1.get(0);
+                                int l2 = loc2.get(0);
+                                int count1 = 0;
+                                int count2 = 0;
+                                int frag = Math.abs(l1 - l2);
+                                while (!found) {
+                                    if (frag >= 500 &&
+                                            frag <= 2000) {
+                                        found = true;
+                                        frags[phageCounter++] = frag + 0.0;
+                                    } else if (l1 < l2 && frag < 500) {
+                                        count2++;
+                                    } else if (l1 > l2 && frag < 500) {
+                                        count1++;
+                                    } else if (l1 > l2 && frag > 2000) {
+                                        count2++;
+                                    } else if (l1 < l2 && frag > 2000) {
+                                        count1++;
+                                    } else {
+                                        break;
+                                    }
+                                    if (count1 < loc1.size() &&
+                                            count2 < loc2.size()) {
+                                        l1 = loc1.get(count1);
+                                        l2 = loc2.get(count2);
+                                        frag = Math.abs(l1 - l2);
+                                    } else {
+                                        break;
+                                    }
+                                }
+                                if (!found) {
+                                    match = false;
                                     break;
                                 }
-                            }
-                            if(!found){
-                                match=false;
-                                break;
-                            }
 
+                            }
+                            if (match) {
+                                matches++;
+                                matched.add(new Matches(a, b, frags));
+                            }
                         }
-                        if (match) {
-                            matches++;
-                            matched.add(new Matches(a,b,frags));
-                        }
-                    }
 //                    k[0]++;
 //                    System.out.println(k[0]);
-                });
-                System.out.println((System.nanoTime() - time) / Math.pow(10, 9)/60.0);
-                System.out.println("Primers matched");
-                int c = 0;
-                int i = 0;
-                try{
-                    for (Matches primerkey : matched) {
-                        c++;
-                        String primer1= primerkey.one.getSequence();
-                        String primer2= primerkey.two.getSequence();
-                        st.setString(1, primer1);
-                        st.setString(2, primer2);
-                        st.setDouble(3,complementarity(primer1,primer2,Dpal_Inst));
-                        st.setDouble(4,primerkey.stats.getMean());
-                        st.setDouble(5,primerkey.stats.getVariance());
-                        st.setDouble(6,primerkey.stats.getMean()+2*primerkey.stats.getStandardDeviation());
-                        st.setDouble(7,primerkey.stats.getMean()-2*primerkey.stats.getStandardDeviation());
-                        st.setString(8, z);
-                        st.setString(9, x);
-                        st.addBatch();
-                        i++;
-                        if (i == 1000) {
-                            i = 0;
+                    });
+                    System.out.println((System.nanoTime() - time) / Math.pow(10, 9) / 60.0);
+                    System.out.println("Primers matched");
+                    int c = 0;
+                    int i = 0;
+                    try {
+                        for (Matches primerkey : matched) {
+                            c++;
+                            String primer1 = primerkey.one.getSequence();
+                            String primer2 = primerkey.two.getSequence();
+                            st.setString(1, primer1);
+                            st.setString(2, primer2);
+                            st.setDouble(3, complementarity(primer1, primer2, Dpal_Inst));
+                            st.setDouble(4, primerkey.stats.getMean());
+                            st.setDouble(5, primerkey.stats.getVariance());
+                            st.setDouble(6, primerkey.stats.getMean() + 2 * primerkey.stats.getStandardDeviation());
+                            st.setDouble(7, primerkey.stats.getMean() - 2 * primerkey.stats.getStandardDeviation());
+                            st.setString(8, z);
+                            st.setString(9, x);
+                            st.addBatch();
+                            i++;
+                            if (i == 1000) {
+                                i = 0;
+                                st.executeBatch();
+                                db.commit();
+                            }
+                        }
+
+                        if (i > 0) {
                             st.executeBatch();
                             db.commit();
                         }
+                    } catch (SQLException e) {
+                        e.printStackTrace();
+                        System.out.println("Error occurred at " + x + " " + z);
                     }
-
-                    if (i>0) {
-                        st.executeBatch();
-                        db.commit();
-                    }
-                } catch (SQLException e) {
-                    e.printStackTrace();
-                    System.out.println("Error occurred at " + x + " " + z);
+                    System.out.println(c);
                 }
-                System.out.println(c);
+                log.println(z);
+                log.flush();
+                System.gc();
             }
-            log.println(z);
-            log.flush();
-            System.gc();
         }
         stat.execute("SET FILES LOG TRUE;");
         st.close();

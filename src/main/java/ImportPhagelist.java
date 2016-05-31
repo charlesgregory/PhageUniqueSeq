@@ -72,7 +72,7 @@ public class ImportPhagelist {
             e.printStackTrace();
         }
         List<String[]> collect = lines.stream().skip(1).filter(x -> x[1].equals(strain))
-                .filter(x->!(x[0].equals("Byougenkin")||x[0].equals("phiBT1")))
+                .filter(x->!(x[0].equals("Byougenkin")||x[0].equals("phiBT1")||x[0].equals("Swenson")))
                 .map(x -> {
                     if(x[2].equals("Singleton")){
                         String[] r = new String[2];
@@ -101,7 +101,7 @@ public class ImportPhagelist {
         } catch (FileNotFoundException e) {
             e.printStackTrace();
         }
-        List<String[]> collect = lines.stream().skip(1).filter(x->!(x[0].equals("Byougenkin")||x[0].equals("phiBT1")))
+        List<String[]> collect = lines.stream().skip(1).filter(x->!(x[0].equals("Byougenkin")||x[0].equals("phiBT1")||x[0].equals("Swenson")))
                 .map(x -> {
                             if(x[2].equals("Singleton")){
                                 String[] r = new String[2];
@@ -128,7 +128,7 @@ public class ImportPhagelist {
         } catch (FileNotFoundException e) {
             e.printStackTrace();
         }
-        List<String[]> collect = lines.stream().skip(1).filter(x->!(x[0].equals("Byougenkin")||x[0].equals("phiBT1")))
+        List<String[]> collect = lines.stream().skip(1).filter(x->!(x[0].equals("Byougenkin")||x[0].equals("phiBT1")||x[0].equals("Swenson")))
                 .map(x -> {
                             if(x[2].equals("Singleton")){
                                 String[] r = new String[3];

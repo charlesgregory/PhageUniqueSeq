@@ -23,7 +23,7 @@ import java.sql.SQLException;
  * Created by Thomas on 12/31/2015.
  * Main for database updating
  */
-@Deprecated
+@SuppressWarnings("Duplicates")
 public class Update{
     static final String JDBC_DRIVER_HSQL = "org.hsqldb.jdbc.JDBCDriver";
     static final String DB_SERVER_URL ="jdbc:hsqldb:hsql://localhost/primerdb;ifexists=true";
@@ -35,39 +35,37 @@ public class Update{
     public static void main(String[] args) throws IOException, SQLException, ClassNotFoundException, IllegalAccessException, InstantiationException {
         Class.forName(JDBC_DRIVER_HSQL).newInstance();
         conn = DriverManager.getConnection(DB_SERVER_URL,USER,PASS);
-        if(args[0].equals("-meta")){
+        if(args[1].equals("-meta")){
             HSqlManager.getClusterSizes(conn);
         }
-        else if(args[0].equals("-clear")){
+        else if(args[1].equals("-clear")){
             HSqlManager.clearDatabase(conn);
         }
-        else if(args[1].equals("-newCommon")){
-            HSqlManager.runNewBPCommon(conn,Integer.valueOf(args[2]));
-        }
-        else if(args[1].equals("-newUnique")){
-            HSqlManager.runNewBPUnique(conn,Integer.valueOf(args[2]));
-        }
+//        else if(args[1].equals("-build")){
+//            HSqlManager.main(args);
+//        }
         else if(args[1].equals("-new")){
             if(args[3]!=null){
                 for (int i =Integer.valueOf(args[2]);
                      i<=Integer.valueOf(args[3]);i++){
-                    HSqlManager.runNewBP(conn, i);
+                    HSqlManager.primerAnalysis(conn, i);
                     System.gc();
                 }
             }else {
                 HSqlManager.runNewBP(conn, Integer.valueOf(args[2]));
             }
-            conn.createStatement().execute("SHUTDOWN");
         }
         else if(args[1].equals("-pick")){
-            HSqlPrimerDesign.locations(conn,"");
+            HSqlPrimerDesign.locations(conn);
         }
-        else if(args[1].equals("-match")){
-            HSqlPrimerDesign.checker(conn,Integer.valueOf(args[2]));
-        }
+//        else if(args[1].equals("-match")){
+//            HSqlPrimerDesign.checker(conn,Integer.valueOf(args[2]));
+//        }
         else if(args[1].equals("-check")){
 //            FixPhagelist.main(new String[0]);
             HSqlManager.runChecks(conn);
+        }else if(args[1].equals("-test")){
+//            Test.test(conn, 18);
         }
     }
 }

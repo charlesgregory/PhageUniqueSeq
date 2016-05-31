@@ -22,6 +22,7 @@ import java.sql.SQLException;
  * Main for database updating
  */
 @SuppressWarnings("Duplicates")
+@Deprecated
 public class MycoUpdate{
     static final String JDBC_DRIVER_HSQL = "org.hsqldb.jdbc.JDBCDriver";
     static final String DB_SERVER_URL ="jdbc:hsqldb:hsql://localhost/primerdb;ifexists=true";
@@ -54,7 +55,7 @@ public class MycoUpdate{
             }
         }
         else if(args[1].equals("-pick")){
-            HSqlPrimerDesign.locations(conn,"-myco");
+            HSqlPrimerDesign.locations(conn);
         }
 //        else if(args[1].equals("-match")){
 //            HSqlPrimerDesign.checker(conn,Integer.valueOf(args[2]));

@@ -31,7 +31,6 @@ import java.util.stream.Collectors;
 public class HSqlManager {
     static final String JDBC_DRIVER_HSQL = "org.hsqldb.jdbc.JDBCDriver";
     static final String DB_SERVER_URL ="jdbc:hsqldb:hsql://localhost/primerdb;ifexists=true";
-    static final String MYCO_DB_SERVER_URL ="jdbc:hsqldb:hsql://localhost/myco;ifexists=true";
     static final String DB_URL_HSQL_C = "jdbc:hsqldb:file:database/primerdb";
     private static ImportPhagelist INSTANCE;
     private static HSqlManager instance;
@@ -67,13 +66,8 @@ public class HSqlManager {
     //Main for Initial DB Build
     public static void main(String[] args) throws ClassNotFoundException,
             SQLException, InstantiationException, IllegalAccessException, IOException {
-        if(args[0].equals("-myco")){
-            HSqlManager db = new HSqlManager(MYCO_DB_SERVER_URL);
-            db.dbBuild();
-        }else {
-            HSqlManager db = getInstance();
-            db.dbBuild();
-        }
+        HSqlManager db = new HSqlManager(DB_SERVER_URL);
+        db.dbBuild();
     }
     //runs Initial build and common clustering
     public void dbBuild() throws SQLException, ClassNotFoundException, IOException,
@@ -539,6 +533,7 @@ public class HSqlManager {
         System.out.println("Meta recorded");
     }
     @SuppressWarnings("Duplicates")
+    @Deprecated
     private static void mycoCommonInitialize(int bps, Connection connection) throws SQLException, IOException {
         long time = System.currentTimeMillis();
         String base = new File("").getAbsolutePath();
@@ -650,6 +645,7 @@ public class HSqlManager {
         System.out.println((System.currentTimeMillis()-time ) / Math.pow(10, 3)/60);
     }
     @SuppressWarnings("Duplicates")
+    @Deprecated
     public static void mycoUniqueDB(Connection connection, int bps) throws ClassNotFoundException,
             SQLException, InstantiationException, IllegalAccessException, IOException {
         long time = System.currentTimeMillis();
@@ -763,7 +759,7 @@ public class HSqlManager {
         System.out.println("Unique Updated");
         System.out.println((System.currentTimeMillis()-time ) / Math.pow(10, 3)/60);
     }
-    public static void primerAnalysis(Connection connection, int bps) throws SQLException, IOException {
+    public static void primerAnalysis(Connection connection, int bps,String strain) throws SQLException, IOException {
         long time = System.currentTimeMillis();
         DpalLoad.main(new String[1]);
         HSqlPrimerDesign.Dpal_Inst = DpalLoad.INSTANCE_WIN64;
@@ -786,15 +782,20 @@ public class HSqlManager {
                 "VALUES(?,?,?,?,?,?,true,true,?)");
         ResultSet call = stat.executeQuery("Select * From Primerdb.Phages;");
         List<String[]> phages = new ArrayList<>();
-        String strain = "";
         while (call.next()) {
             String[] r = new String[3];
             r[0]=call.getString("Strain");
             r[1]=call.getString("Cluster");
             r[2]=call.getString("Name");
             phages.add(r);
-            if(r[2].equals("xkcd")) {
-                strain = r[0];
+            if(strain.equals("-myco")) {
+                if (r[2].equals("xkcd")) {
+                    strain = r[0];
+                }
+            }else if(strain.equals("-arthro")){
+                if (r[2].equals("ArV1")) {
+                    strain = r[0];
+                }
             }
         }
         call.close();
@@ -929,7 +930,15 @@ public class HSqlManager {
             SQLException, InstantiationException, IllegalAccessException, ClassNotFoundException {
 //        mycoCommonInitialize(bps,connection);
 //        mycoUniqueDB(connection,bps);
-        primerAnalysis(connection,bps);
+        primerAnalysis(connection,bps,"-myco");
+//        HSqlPrimerDesign.primerPicks(connection,bps);
+//        connection.createStatement().execute("SHUTDOWN");
+    }
+    public static void runNewArthroBP(Connection connection, int bps) throws IOException,
+            SQLException, InstantiationException, IllegalAccessException, ClassNotFoundException {
+//        mycoCommonInitialize(bps,connection);
+//        mycoUniqueDB(connection,bps);
+        primerAnalysis(connection,bps,"-arthro");
 //        HSqlPrimerDesign.primerPicks(connection,bps);
 //        connection.createStatement().execute("SHUTDOWN");
     }

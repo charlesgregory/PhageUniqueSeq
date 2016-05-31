@@ -19,5 +19,9 @@
         <processorPath useClasspath="true" />
       </profile>
     </annotationProcessing>
+    <bytecodeTargetLevel>
+      <module name="PhageUniqueSeq_main" target="1.8" />
+      <module name="PhageUniqueSeq_test" target="1.8" />
+    </bytecodeTargetLevel>
   </component>
 </project>

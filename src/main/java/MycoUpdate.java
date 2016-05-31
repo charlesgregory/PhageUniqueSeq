@@ -26,23 +26,22 @@ public class MycoUpdate{
     static final String JDBC_DRIVER_HSQL = "org.hsqldb.jdbc.JDBCDriver";
     static final String DB_SERVER_URL ="jdbc:hsqldb:hsql://localhost/primerdb;ifexists=true";
     static final String DB_URL_HSQL_C = "jdbc:hsqldb:file:database/primerdb;ifexists=true";
-    static final String MYCO_DB_SERVER_URL ="jdbc:hsqldb:hsql://localhost/myco;ifexists=true";
     public static Connection conn;
     private static final String USER = "SA";
     private static final String PASS = "";
 
     public static void main(String[] args) throws IOException, SQLException, ClassNotFoundException, IllegalAccessException, InstantiationException {
         Class.forName(JDBC_DRIVER_HSQL).newInstance();
-        conn = DriverManager.getConnection(MYCO_DB_SERVER_URL,USER,PASS);
+        conn = DriverManager.getConnection(DB_SERVER_URL,USER,PASS);
         if(args[1].equals("-meta")){
             HSqlManager.getClusterSizes(conn);
         }
         else if(args[1].equals("-clear")){
             HSqlManager.clearDatabase(conn);
         }
-        else if(args[1].equals("-build")){
-            HSqlManager.main(args);
-        }
+//        else if(args[1].equals("-build")){
+//            HSqlManager.main(args);
+//        }
         else if(args[1].equals("-new")){
             if(args[3]!=null){
                 for (int i =Integer.valueOf(args[2]);
@@ -55,16 +54,16 @@ public class MycoUpdate{
             }
         }
         else if(args[1].equals("-pick")){
-            HSqlPrimerDesign.locations(conn);
+            HSqlPrimerDesign.locations(conn,"-myco");
         }
-        else if(args[1].equals("-match")){
-            HSqlPrimerDesign.checker(conn,Integer.valueOf(args[2]));
-        }
+//        else if(args[1].equals("-match")){
+//            HSqlPrimerDesign.checker(conn,Integer.valueOf(args[2]));
+//        }
         else if(args[1].equals("-check")){
 //            FixPhagelist.main(new String[0]);
             HSqlManager.runChecks(conn);
         }else if(args[1].equals("-test")){
-            Test.test(conn, 18);
+//            Test.test(conn, 18);
         }
     }
 }

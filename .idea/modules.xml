@@ -2,7 +2,9 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
-      <module fileurl="file://$PROJECT_DIR$/PhageUniqueSeq.iml" filepath="$PROJECT_DIR$/PhageUniqueSeq.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/PhageUniqueSeq.iml" filepath="$PROJECT_DIR$/.idea/modules/PhageUniqueSeq.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/PhageUniqueSeq_main.iml" filepath="$PROJECT_DIR$/.idea/modules/PhageUniqueSeq_main.iml" group="PhageUniqueSeq" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/PhageUniqueSeq_test.iml" filepath="$PROJECT_DIR$/.idea/modules/PhageUniqueSeq_test.iml" group="PhageUniqueSeq" />
     </modules>
   </component>
 </project>

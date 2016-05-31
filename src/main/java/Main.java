@@ -34,36 +34,39 @@ public class Main {
                     "-update basepairnum: Runs update on database of primers basepairnum\n" +
                     "-design: Designs primers");
         }
-        else if (args[0].equals("-all")){
-            HSqlManager.main(args);
-            Update.main(args);
-            HSqlPrimerDesign.main(args);
-        }
+//        else if (args[0].equals("-all")){
+//            HSqlManager.main(args);
+//            Update.main(args);
+//            HSqlPrimerDesign.main(args);
+//        }
         else if(args[0].equals("-build")){
             HSqlManager.main(args);
         }
         else if(args[0].equals("-myco")){
             MycoUpdate.main(args);
         }
-        else if(args[0].equals("-update")){
-            Update.main(args);
+        else if(args[0].equals("-arthro")){
+            ArthroUpdate.main(args);
         }
-        else if(args[0].equals("-meta")){
-            Update.main(args);
-        }
-        else if(args[0].equals("-design")){
-            HSqlPrimerDesign.main(args);
-        }
-        else if(args[0].equals("-test")){
+//        else if(args[0].equals("-update")){
+//            Update.main(args);
+//        }
+//        else if(args[0].equals("-meta")){
+//            Update.main(args);
+//        }
+//        else if(args[0].equals("-design")){
+//            HSqlPrimerDesign.main(args);
+//        }
+//        else if(args[0].equals("-test")){
 //            try {
 //                Test.main(args);
 //            } catch (CompoundNotFoundException e) {
 //                e.printStackTrace();
 //            }
-        }
-        else if(args[0].equals("-clear")){
-            Update.main(args);
-        }
+//        }
+//        else if(args[0].equals("-clear")){
+//            Update.main(args);
+//        }
         else {
             System.out.println("Incorrect action:"+args[0]+"\n" +
                     "options are:\n" +

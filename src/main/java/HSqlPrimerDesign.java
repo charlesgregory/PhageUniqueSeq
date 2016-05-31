@@ -501,7 +501,7 @@ public class HSqlPrimerDesign {
         return tm;
     }
     @SuppressWarnings("Duplicates")
-    public static void locations(Connection connection) throws ClassNotFoundException,
+    public static void locations(Connection connection, String strain) throws ClassNotFoundException,
             SQLException, InstantiationException, IllegalAccessException, IOException {
         long time = System.nanoTime();
         String base = new File("").getAbsolutePath();
@@ -518,15 +518,20 @@ public class HSqlPrimerDesign {
                 "Values(?,?,?,?,?,?,?,?,?)");
         ResultSet call = stat.executeQuery("Select * From Primerdb.Phages;");
         List<String[]> phages = new ArrayList<>();
-        String strain = "";
         while (call.next()) {
             String[] r = new String[3];
             r[0]=call.getString("Strain");
             r[1]=call.getString("Cluster");
             r[2]=call.getString("Name");
             phages.add(r);
-            if(r[2].equals("xkcd")) {
-                strain = r[0];
+            if(strain.equals("-myco")) {
+                if (r[2].equals("xkcd")) {
+                    strain = r[0];
+                }
+            }else if(strain.equals("-arthro")){
+                if (r[2].equals("ArV1")) {
+                    strain = r[0];
+                }
             }
         }
         call.close();

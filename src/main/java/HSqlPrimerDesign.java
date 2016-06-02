@@ -500,6 +500,25 @@ public class HSqlPrimerDesign {
         }
         return tm;
     }
+    public static double easytm(String primer){
+        int a =0;
+        int c =0;
+        int g = 0;
+        int t = 0;
+        char[] chars =primer.toCharArray();
+        for(char x:chars){
+            if(x=='A'||x=='a'){
+                a++;
+            }else if (x=='G'||x=='g'){
+                g++;
+            }else if (x=='C'||x=='c'){
+                c++;
+            }else if (x=='T'||x=='t'){
+                t++;
+            }
+        }
+        return 64.9 +41*(g+c-16.4)/(a+t+g+c);
+    }
     @SuppressWarnings("Duplicates")
     public static void locations(Connection connection) throws ClassNotFoundException,
             SQLException, InstantiationException, IllegalAccessException, IOException {

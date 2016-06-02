@@ -23,9 +23,8 @@ import java.sql.SQLException;
 public class Main {
     //Controls entry to other mains through arguments to the command prompt
     //actions must be specified
-    public static void main(String[] args) throws ClassNotFoundException,
-            SQLException, InstantiationException, IOException,
-            IllegalAccessException, NoSuchFieldException {
+    public static void main(String[] args) throws ClassNotFoundException, SQLException,
+            InstantiationException, IOException, IllegalAccessException {
         if(args.length==0){
             System.out.println("No actions specified\n" +
                     "options are:\n" +

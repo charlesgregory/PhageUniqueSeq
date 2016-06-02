@@ -882,7 +882,8 @@ public class HSqlManager {
                         st.setString(2, str);
                         st.setString(3, x);
                         st.setString(4, primerClust);
-                        st.setDouble(5, HSqlPrimerDesign.primerTm(str, 0, 800, 1.5, 0.2));
+//                        st.setDouble(5, HSqlPrimerDesign.primerTm(str, 0, 800, 1.5, 0.2));
+                        st.setDouble(5, HSqlPrimerDesign.easytm(str));
                         st.setDouble(6, HSqlPrimerDesign.gcContent(str));
                         st.setBoolean(7, HSqlPrimerDesign.calcHairpin(str, 4));
                         st.addBatch();

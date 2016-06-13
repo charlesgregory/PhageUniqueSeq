@@ -136,6 +136,19 @@ public class HSqlManager {
         init.executeUpdate("CREATE INDEX e on primerdb.matchedprimers(Strain)");
         init.executeUpdate("CREATE INDEX f on primerdb.matchedprimers(Primer)");
         init.executeUpdate("CREATE INDEX g on primerdb.matchedprimers(PrimerMatch)");
+        init.executeUpdate("CREATE INDEX h on primerdb.matchedprimers(Comp)");
+        init.executeUpdate("CREATE INDEX i on primerdb.matchedprimers(FragAVG)");
+        init.executeUpdate("CREATE INDEX j on primerdb.matchedprimers(FragVar)");
+        init.executeUpdate("CREATE INDEX k on primerdb.matchedprimers(H2SD)");
+        init.executeUpdate("CREATE INDEX l on primerdb.matchedprimers(L2SD)");
+        init.executeUpdate("CREATE INDEX m on primerdb.primers(Bp)");
+        init.executeUpdate("CREATE INDEX n on primerdb.primers(Tm)");
+        init.executeUpdate("CREATE INDEX o on primerdb.primers(Gc)");
+        init.executeUpdate("CREATE INDEX p on primerdb.primers(UniqueP)");
+        init.executeUpdate("CREATE INDEX q on primerdb.primers(Hairpin)");
+        init.executeUpdate("CREATE INDEX r on primerdb.phages(Cluster)");
+        init.executeUpdate("CREATE INDEX s on primerdb.phages(Strain)");
+
         init.close();
         System.out.println("Database Initialized");
     }

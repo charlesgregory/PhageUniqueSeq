@@ -647,10 +647,12 @@ public class HSqlPrimerDesign {
 //                                System.out.println(phage+" "+a.getSequence());
 //                            }
                                 if (loc1.size() == 0 || loc2.size() == 0) {
+//                                if (loc1.size()!=1||loc2.size()!=1){
                                     match = false;
                                     break;
                                 }
                                 boolean found = false;
+                                int fragCount =0;
                                 int l1 = loc1.get(0);
                                 int l2 = loc2.get(0);
                                 int count1 = 0;
@@ -659,8 +661,11 @@ public class HSqlPrimerDesign {
                                 while (!found) {
                                     if (frag >= 500 &&
                                             frag <= 2000) {
-                                        found = true;
-                                        frags[phageCounter++] = frag + 0.0;
+                                        fragCount++;
+                                        if(++count1< loc1.size())
+                                            l1 = loc1.get(count1);
+                                        else if(++count2< loc2.size())
+                                            l2 = loc2.get(count2);
                                     } else if (l1 < l2 && frag < 500) {
                                         count2++;
                                     } else if (l1 > l2 && frag < 500) {
@@ -678,7 +683,13 @@ public class HSqlPrimerDesign {
                                         l2 = loc2.get(count2);
                                         frag = Math.abs(l1 - l2);
                                     } else {
-                                        break;
+                                        if(fragCount==1){
+                                            found=true;
+                                            frags[phageCounter++] = frag + 0.0;
+                                        }
+                                        else{
+                                            break;
+                                        }
                                     }
                                 }
                                 if (!found) {

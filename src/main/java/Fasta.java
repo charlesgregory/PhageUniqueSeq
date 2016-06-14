@@ -37,6 +37,7 @@ public class Fasta {
         String seq2 = null;
         String[] r = new String[2];
         try{
+            //
             LinkedHashMap<String, DNASequence> f = FastaReaderHelper.readFastaDNASequence(new File(path));
             List<String> dnaList = new ArrayList<>(1);
             for (Map.Entry<String, DNASequence> stringDNASequenceEntry : f.entrySet()) {

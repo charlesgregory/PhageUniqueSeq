@@ -30,6 +30,7 @@ import java.io.InputStreamReader;
 public class ImportPhagelist {
     public static List<String[]> full;
     String path;
+    String pathSimple;
     Set<String> strains;
     String chosenStrain;
     //Singleton pattern
@@ -40,7 +41,8 @@ public class ImportPhagelist {
         File file = new File(base+"\\Fastas");
         CSV.makeDirectory(file);
         this.path =Download();
-        getStrains(path);
+        this.pathSimple = DownloadSimple();
+//        getStrains(path);
     }
 
     public static ImportPhagelist getInstance() throws IOException {
@@ -128,7 +130,7 @@ public class ImportPhagelist {
         } catch (FileNotFoundException e) {
             e.printStackTrace();
         }
-        List<String[]> collect = lines.stream().skip(1).filter(x->!(x[0].equals("Byougenkin")||x[0].equals("phiBT1")||x[0].equals("Swenson")))
+        List<String[]> collect = lines.stream()
                 .map(x -> {
                             if(x[2].equals("Singleton")){
                                 String[] r = new String[3];
@@ -148,6 +150,32 @@ public class ImportPhagelist {
                 ).collect(Collectors.toList());
         return collect;
     }
+    public List<String[]> readFileAllStrainsSimple(String path1) throws IOException {
+        String cvsSplitBy = "\\t";
+        List<String[]> lines = null;
+        try (FileInputStream fis = new FileInputStream(path1);
+             BufferedReader br = new BufferedReader( new InputStreamReader(fis))) {
+            lines = br.lines().map((l) -> l.split(cvsSplitBy)).collect(Collectors.toList());
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        }
+        List<String[]> collect = lines.stream().map(x -> {
+                            if(x[1].equals("Singleton")){
+                                String[] r = new String[2];
+                                r[0] = x[0];
+                                r[1] = x[0];
+                                return r;
+                            }
+                            else{
+                                String[] r = new String[2];
+                                r[0] = x[1];
+                                r[1] = x[0];
+                                return r;
+                            }
+                        }
+                ).collect(Collectors.toList());
+        return collect;
+    }
     //Downloads phagelist file from phagesdb.org
     private static String Download() throws IOException {
         String path = "http://phagesdb.org/data/?set=seq&type=full";
@@ -158,6 +186,16 @@ public class ImportPhagelist {
         FileUtils.copyURLToFile(netPath, file);
         return file.toString();
     }
+    private static String DownloadSimple() throws IOException {
+        String path = "http://phagesdb.org/data/?set=seq&type=simple";
+        String base = new File("").getAbsolutePath();
+        String name = base + "/Fastas/PhagesDB_Data_Simple.txt";
+        File file = new File(name);
+        URL netPath = new URL(path);
+        FileUtils.copyURLToFile(netPath, file);
+        return file.toString();
+    }
+    @Deprecated
     public void parseAllPhagePrimers(int bps) throws IOException {
         this.readFileAll(this.path)
                 .stream().forEach(x -> {
@@ -168,6 +206,7 @@ public class ImportPhagelist {
             }
         });
     }
+    @Deprecated
     public void parseAllPhages(int bps) throws IOException {
         this.readFileAll(this.path)
                 .stream().forEach(x -> {

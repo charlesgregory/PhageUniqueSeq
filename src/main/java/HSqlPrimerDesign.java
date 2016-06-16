@@ -1,16 +1,11 @@
 import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
-import org.biojava.nbio.core.exceptions.CompoundNotFoundException;
 import org.biojava.nbio.core.sequence.DNASequence;
-import org.biojava.nbio.core.sequence.io.BufferedReaderBytesRead;
 
 import java.io.*;
-import java.nio.ByteBuffer;
 import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
 import java.sql.*;
 import java.util.*;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 /**
@@ -49,7 +44,7 @@ import java.util.stream.Collectors;
 public class HSqlPrimerDesign {
     static DpalLoad.Dpal Dpal_Inst;
     static final String JDBC_DRIVER_HSQL = "org.hsqldb.jdbc.JDBCDriver";
-    static final String DB_SERVER_URL ="jdbc:hsqldb:hsql://localhost/primerdb;ifexists=true";
+    static final String DB_SERVER_URL ="jdbc:hsqldb:hsql://localhost/primerdbTest";
     static final String DB_URL_HSQL_C = "jdbc:hsqldb:file:database/primerdb;ifexists=true";
     public static Connection conn;
     private static final String USER = "SA";
@@ -527,14 +522,15 @@ public class HSqlPrimerDesign {
         DpalLoad.main(new String[0]);
         Dpal_Inst =DpalLoad.INSTANCE_WIN64;
         System.out.println(Dpal_Inst);
+        Map<List<String>, DNASequence> fastas = FastaManager.getMultiFasta();
         Connection db = connection;
-        db.setAutoCommit(false);
         Statement stat = db.createStatement();
         PrintWriter log = new PrintWriter(new File("javalog.log"));
+        stat.execute("SET AUTOCOMMIT FALSE;");
         stat.execute("SET FILES LOG FALSE;");
         PreparedStatement st = db.prepareStatement("INSERT INTO Primerdb.MatchedPrimers(" +
-                "Primer, PrimerMatch, Comp,FragAVG,FragVAR,H2SD,L2SD, Cluster, Strain)" +
-                "Values(?,?,?,?,?,?,?,?,?)");
+                "Bp1, Primer, Bp2, PrimerMatch, Comp,FragAVG,FragVAR,H2SD,L2SD, Cluster, Strain)" +
+                "Values(?,?,?,?,?,?,?,?,?,?,?)");
         ResultSet call = stat.executeQuery("Select * From Primerdb.Phages;");
         List<String[]> phages = new ArrayList<>();
         while (call.next()) {
@@ -573,7 +569,8 @@ public class HSqlPrimerDesign {
                                 " where Strain ='" + x + "' and Cluster ='" + z + "' and UniqueP = true" +
                                 " and Hairpin = false");
                         while (resultSet.next()) {
-                            Primer primer = new Primer(resultSet.getString("Sequence"));
+                            int len = resultSet.getInt("Bp");
+                            Primer primer = new Primer(resultSet.getLong("Sequence"),len);
                             primer.setTm(resultSet.getDouble("Tm"));
                             primers.add(primer);
                         }
@@ -585,14 +582,18 @@ public class HSqlPrimerDesign {
                     System.out.println(primers.size());
                     Set<Primer> primerlist2 = primers.stream().collect(Collectors.toSet());
                     Primer[] primers2 = primerlist2.toArray(new Primer[primerlist2.size()]);
-                    Map<String, Map<CharSequence, List<Integer>>> locations = Collections.synchronizedMap(
+                    Map<String, Map<Long, List<Integer>>> locations = Collections.synchronizedMap(
                             new HashMap<>());
                     clustphage.stream().forEach(phage -> {
-                        String[] seqs = Fasta.parse(base + "/Fastas/" + phage + ".fasta");
-                        String sequence = seqs[0] + seqs[1];
-                        Map<String, List<Integer>> seqInd = new HashMap<>();
+                        List<String>id = new ArrayList<>();
+                        id.add(x);
+                        id.add(z);
+                        id.add(phage);
+                        String sequence = fastas.get(id).getSequenceAsString()+
+                                fastas.get(id).getReverseComplement().getSequenceAsString();
+                        Map<Long, List<Integer>> seqInd = new HashMap<>();
                         for (int i = 0; i <= sequence.length() - 10; i++) {
-                            String sub = sequence.substring(i, i + 10);
+                            long sub = Encoding.twoBitEncoding(sequence.substring(i, i + 10));
                             if (seqInd.containsKey(sub)) {
                                 seqInd.get(sub).add(i);
                             } else {
@@ -601,11 +602,11 @@ public class HSqlPrimerDesign {
                                 seqInd.put(sub, list);
                             }
                         }
-                        Map<CharSequence, List<Integer>> alllocs = new HashMap<>();
+                        Map<Long, List<Integer>> alllocs = new HashMap<>();
                         for (Primer primer : primers2) {
                             List<Integer> locs = new ArrayList<>();
-                            String sequence1 = primer.getSequence();
-                            String frag = sequence1.substring(0, 10);
+                            String sequence1 = Encoding.twoBitDecode(primer.getSequence(),primer.getBps());
+                            long frag = Encoding.twoBitEncoding(sequence1.substring(0, 10));
                             List<Integer> integers = seqInd.get(frag);
                             if (integers != null) {
                                 for (Integer i : integers) {
@@ -615,7 +616,7 @@ public class HSqlPrimerDesign {
                                     }
                                 }
                             }
-                            alllocs.put(sequence1, locs);
+                            alllocs.put(Encoding.twoBitEncoding(sequence1), locs);
                         }
                         locations.put(phage, alllocs);
                     });
@@ -637,12 +638,14 @@ public class HSqlPrimerDesign {
                                 break;
                             }
                             if (Math.abs(a.getTm() - b.getTm()) > 5.0 ||
-                                    a.getSequence().equals(b.getSequence())) {
+                                    a.getSequence()==(b.getSequence())) {
                                 continue;
                             }
                             for (String phage : clustphages) {
-                                List<Integer> loc1 = locations.get(phage).get(a.getSequence());
-                                List<Integer> loc2 = locations.get(phage).get(b.getSequence());
+                                List<Integer> loc1 = locations.get(phage).get(
+                                        a.getSequence());
+                                List<Integer> loc2 = locations.get(phage).get(
+                                        b.getSequence());
 //                            if(loc1.size()==0){
 //                                System.out.println(phage+" "+a.getSequence());
 //                            }
@@ -713,17 +716,22 @@ public class HSqlPrimerDesign {
                     try {
                         for (Matches primerkey : matched) {
                             c++;
-                            String primer1 = primerkey.one.getSequence();
-                            String primer2 = primerkey.two.getSequence();
-                            st.setString(1, primer1);
-                            st.setString(2, primer2);
-                            st.setDouble(3, complementarity(primer1, primer2, Dpal_Inst));
-                            st.setDouble(4, primerkey.stats.getMean());
-                            st.setDouble(5, primerkey.stats.getVariance());
-                            st.setDouble(6, primerkey.stats.getMean() + 2 * primerkey.stats.getStandardDeviation());
-                            st.setDouble(7, primerkey.stats.getMean() - 2 * primerkey.stats.getStandardDeviation());
-                            st.setString(8, z);
-                            st.setString(9, x);
+                            long primer1 = primerkey.one.getSequence();
+                            long primer2 = primerkey.two.getSequence();
+                            st.setInt(1,primerkey.one.getBps());
+                            st.setLong(2, primer1);
+                            st.setInt(3,primerkey.two.getBps());
+                            st.setLong(4, primer2);
+                            st.setDouble(5, complementarity(
+                                    Encoding.twoBitDecode(primer1,primerkey.one.getBps()),
+                                    Encoding.twoBitDecode(primer2,primerkey.two.getBps()),
+                                    Dpal_Inst));
+                            st.setDouble(6, primerkey.stats.getMean());
+                            st.setDouble(7, primerkey.stats.getVariance());
+                            st.setDouble(8, primerkey.stats.getMean() + 2 * primerkey.stats.getStandardDeviation());
+                            st.setDouble(9, primerkey.stats.getMean() - 2 * primerkey.stats.getStandardDeviation());
+                            st.setString(10, z);
+                            st.setString(11, x);
                             st.addBatch();
                             i++;
                             if (i == 1000) {
@@ -748,6 +756,8 @@ public class HSqlPrimerDesign {
                 System.gc();
             }
         }
+
+        stat.execute("SET AUTOCOMMIT TRUE;");
         stat.execute("SET FILES LOG TRUE;");
         st.close();
         stat.close();
@@ -863,17 +873,23 @@ public class HSqlPrimerDesign {
     }
 
     private static class Primer{
-        private String Sequence;
+        private long Sequence;
+        private int bps;
         private double Tm;
-        public Primer(String sequence){
+        public Primer(long sequence,int bps){
             this.Sequence = sequence;
+            this.bps=bps;
         }
 
-        public String getSequence() {
+        public int getBps() {
+            return bps;
+        }
+
+        public long getSequence() {
             return Sequence;
         }
 
-        public void setSequence(String sequence) {
+        public void setSequence(long sequence) {
             Sequence = sequence;
         }
 

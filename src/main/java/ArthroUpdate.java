@@ -34,7 +34,7 @@ public class ArthroUpdate{
         Class.forName(JDBC_DRIVER_HSQL).newInstance();
         conn = DriverManager.getConnection(DB_SERVER_URL,USER,PASS);
         if(args[1].equals("-meta")){
-            HSqlManager.getClusterSizes(conn);
+//            HSqlManager.getClusterSizes(conn);
         }
         else if(args[1].equals("-clear")){
             HSqlManager.clearDatabase(conn);
@@ -50,7 +50,7 @@ public class ArthroUpdate{
                     System.gc();
                 }
             }else {
-                HSqlManager.runNewBP(conn, Integer.valueOf(args[2]));
+//                HSqlManager.runNewBP(conn, Integer.valueOf(args[2]));
             }
         }
         else if(args[1].equals("-pick")){
@@ -61,7 +61,7 @@ public class ArthroUpdate{
 //        }
         else if(args[1].equals("-check")){
 //            FixPhagelist.main(new String[0]);
-            HSqlManager.runChecks(conn);
+//            HSqlManager.runChecks(conn);
         }else if(args[1].equals("-test")){
 //            Test.test(conn, 18);
         }

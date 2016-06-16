@@ -25,7 +25,7 @@ import java.sql.SQLException;
 @Deprecated
 public class MycoUpdate{
     static final String JDBC_DRIVER_HSQL = "org.hsqldb.jdbc.JDBCDriver";
-    static final String DB_SERVER_URL ="jdbc:hsqldb:hsql://localhost/primerdb;ifexists=true";
+    static final String DB_SERVER_URL ="jdbc:hsqldb:hsql://localhost/master;ifexists=true";
     static final String DB_URL_HSQL_C = "jdbc:hsqldb:file:database/primerdb;ifexists=true";
     public static Connection conn;
     private static final String USER = "SA";
@@ -35,7 +35,7 @@ public class MycoUpdate{
         Class.forName(JDBC_DRIVER_HSQL).newInstance();
         conn = DriverManager.getConnection(DB_SERVER_URL,USER,PASS);
         if(args[1].equals("-meta")){
-            HSqlManager.getClusterSizes(conn);
+//            HSqlManager.getClusterSizes(conn);
         }
         else if(args[1].equals("-clear")){
             HSqlManager.clearDatabase(conn);
@@ -51,7 +51,7 @@ public class MycoUpdate{
                     System.gc();
                 }
             }else {
-                HSqlManager.runNewBP(conn, Integer.valueOf(args[2]));
+//                HSqlManager.runNewBP(conn, Integer.valueOf(args[2]));
             }
         }
         else if(args[1].equals("-pick")){
@@ -62,7 +62,7 @@ public class MycoUpdate{
 //        }
         else if(args[1].equals("-check")){
 //            FixPhagelist.main(new String[0]);
-            HSqlManager.runChecks(conn);
+//            HSqlManager.runChecks(conn);
         }else if(args[1].equals("-test")){
 //            Test.test(conn, 18);
         }

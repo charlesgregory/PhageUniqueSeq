@@ -26,7 +26,7 @@ import java.sql.SQLException;
 @SuppressWarnings("Duplicates")
 public class Update{
     static final String JDBC_DRIVER_HSQL = "org.hsqldb.jdbc.JDBCDriver";
-    static final String DB_SERVER_URL ="jdbc:hsqldb:hsql://localhost/primerdb;ifexists=true";
+    static final String DB_SERVER_URL ="jdbc:hsqldb:hsql://localhost/primerdbTest;ifexists=true";
     static final String DB_URL_HSQL_C = "jdbc:hsqldb:file:database/primerdb;ifexists=true";
     public static Connection conn;
     private static final String USER = "SA";
@@ -36,7 +36,7 @@ public class Update{
         Class.forName(JDBC_DRIVER_HSQL).newInstance();
         conn = DriverManager.getConnection(DB_SERVER_URL,USER,PASS);
         if(args[1].equals("-meta")){
-            HSqlManager.getClusterSizes(conn);
+//            HSqlManager.getClusterSizes(conn);
         }
         else if(args[1].equals("-clear")){
             HSqlManager.clearDatabase(conn);
@@ -52,7 +52,7 @@ public class Update{
                     System.gc();
                 }
             }else {
-                HSqlManager.runNewBP(conn, Integer.valueOf(args[2]));
+//                HSqlManager.runNewBP(conn, Integer.valueOf(args[2]));
             }
         }
         else if(args[1].equals("-pick")){
@@ -63,7 +63,7 @@ public class Update{
 //        }
         else if(args[1].equals("-check")){
 //            FixPhagelist.main(new String[0]);
-            HSqlManager.runChecks(conn);
+//            HSqlManager.runChecks(conn);
         }else if(args[1].equals("-test")){
 //            Test.test(conn, 18);
         }

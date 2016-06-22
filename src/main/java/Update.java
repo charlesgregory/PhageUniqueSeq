@@ -1,4 +1,6 @@
 
+import org.biojava.nbio.core.exceptions.CompoundNotFoundException;
+
 import java.io.IOException;
 import java.sql.Connection;
 import java.sql.DriverManager;
@@ -25,16 +27,18 @@ import java.sql.SQLException;
  */
 @SuppressWarnings("Duplicates")
 public class Update{
-    static final String JDBC_DRIVER_HSQL = "org.hsqldb.jdbc.JDBCDriver";
-    static final String DB_SERVER_URL ="jdbc:hsqldb:hsql://localhost/primerdbTest;ifexists=true";
+//    static final String JDBC_DRIVER_HSQL = "org.hsqldb.jdbc.JDBCDriver";
+    static final String JDBC_DRIVER_H2 = "org.h2.Driver";
+//    static final String DB_SERVER_URL ="jdbc:hsqldb:hsql://localhost/primerdbTest;ifexists=true";
+    static final String DB_SERVER_URL_H2 ="jdbc:h2:primerdbTest;MULTI_THREADED=1;FILE_LOCK=NO";
     static final String DB_URL_HSQL_C = "jdbc:hsqldb:file:database/primerdb;ifexists=true";
     public static Connection conn;
     private static final String USER = "SA";
     private static final String PASS = "";
 
-    public static void main(String[] args) throws IOException, SQLException, ClassNotFoundException, IllegalAccessException, InstantiationException {
-        Class.forName(JDBC_DRIVER_HSQL).newInstance();
-        conn = DriverManager.getConnection(DB_SERVER_URL,USER,PASS);
+    public static void main(String[] args) throws IOException, SQLException, ClassNotFoundException, IllegalAccessException, InstantiationException, CompoundNotFoundException {
+        Class.forName(JDBC_DRIVER_H2).newInstance();
+        conn = DriverManager.getConnection(DB_SERVER_URL_H2,USER,PASS);
         if(args[1].equals("-meta")){
 //            HSqlManager.getClusterSizes(conn);
         }

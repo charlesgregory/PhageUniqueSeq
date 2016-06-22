@@ -1,5 +1,12 @@
 import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
+import org.biojava.nbio.alignment.Alignments;
+import org.biojava.nbio.alignment.SimpleGapPenalty;
+import org.biojava.nbio.core.alignment.matrices.SubstitutionMatrixHelper;
+import org.biojava.nbio.core.alignment.template.SequencePair;
+import org.biojava.nbio.core.alignment.template.SubstitutionMatrix;
+import org.biojava.nbio.core.exceptions.CompoundNotFoundException;
 import org.biojava.nbio.core.sequence.DNASequence;
+import org.biojava.nbio.core.sequence.compound.NucleotideCompound;
 
 import java.io.*;
 import java.nio.MappedByteBuffer;
@@ -41,8 +48,8 @@ import java.util.stream.Collectors;
  * Remm M (2007) Enhancements and modifications of primer design program
  * Primer3 Bioinformatics 23(10):1289-91
  */
+@SuppressWarnings("Duplicates")
 public class HSqlPrimerDesign {
-    static DpalLoad.Dpal Dpal_Inst;
     static final String JDBC_DRIVER_HSQL = "org.hsqldb.jdbc.JDBCDriver";
     static final String DB_SERVER_URL ="jdbc:hsqldb:hsql://localhost/primerdbTest";
     static final String DB_URL_HSQL_C = "jdbc:hsqldb:file:database/primerdb;ifexists=true";
@@ -55,54 +62,33 @@ public class HSqlPrimerDesign {
         Class.forName(JDBC_DRIVER_HSQL).newInstance();
         conn = DriverManager.getConnection(DB_SERVER_URL,USER,PASS);
         PrintWriter log = new PrintWriter(new File("javalog.log"));
-        DpalLoad.main(args);
-        Dpal_Inst = DpalLoad.INSTANCE_WIN64;
-//        int[][] arr =calcHairpin("GGGGGGCCCCCCCCCCCCGGGGGGG",4);
-//        if(arr.length<=1){
-//            System.out.println("No Hairpin's found");
-//        }else{
-//            System.out.println("Hairpin(s) found");
-//        }
         Statement stat = conn.createStatement();
         ResultSet call = stat.executeQuery("Select * From " +
-                "Primerdb.primers where Cluster ='A1' and UniqueP =True and Bp = 20");
+                "primers where Cluster ='A1' and UniqueP =True and Bp = 20");
         Set<CharSequence> primers = new HashSet<>();
         while (call.next()) {
             primers.add(call.getString("Sequence"));
         }
-//        primers.stream().forEach(x->{
-//            log.println(x);
-//            log.println(complementarity(x, x, Dpal_Inst));
-//            int[][] arr =calcHairpin((String)x,4);
-//            if(arr.length<=1){
-//                log.println("No Hairpin's found");
-//            }else{
-//                log.println("Hairpin(s) found");
-//            }
-//            log.println();
-//            log.flush();
-//        });
     }
 
-    @SuppressWarnings("Duplicates")
     //uses a library compiled from primer3 source code
-    public static double complementarity(CharSequence primer1, CharSequence primer2,
-                                         DpalLoad.Dpal INSTANCE){
-        DpalLoad.Dpal.dpal_args args1 = new DpalLoad.Dpal.dpal_args();
-        DpalLoad.Dpal.dpal_results out1 = new DpalLoad.Dpal.dpal_results();
-        INSTANCE.set_dpal_args(args1);
-        INSTANCE.dpal(primer1.toString().getBytes(),
-                primer2.toString().getBytes(),args1,out1);
-        double o1 = out1.score / 100;
-        DpalLoad.Dpal.dpal_args args2 = new DpalLoad.Dpal.dpal_args();
-        DpalLoad.Dpal.dpal_results out2 = new DpalLoad.Dpal.dpal_results();
-        INSTANCE.set_dpal_args(args2);
-        INSTANCE.dpal(primer1.toString().getBytes(),
-                new StringBuilder(makeComplement(primer2.toString()))
-                        .reverse().toString().getBytes(),args2,out2);
-        double o2 = out2.score / 100;
-        return Math.max(o1,o2);
-    }
+//    public static double complementarity(CharSequence primer1, CharSequence primer2,
+//                                         DpalLoad.Dpal INSTANCE){
+//        DpalLoad.Dpal.dpal_args args1 = new DpalLoad.Dpal.dpal_args();
+//        DpalLoad.Dpal.dpal_results out1 = new DpalLoad.Dpal.dpal_results();
+//        INSTANCE.set_dpal_args(args1);
+//        INSTANCE.dpal(primer1.toString().getBytes(),
+//                primer2.toString().getBytes(),args1,out1);
+//        double o1 = out1.score / 100;
+//        DpalLoad.Dpal.dpal_args args2 = new DpalLoad.Dpal.dpal_args();
+//        DpalLoad.Dpal.dpal_results out2 = new DpalLoad.Dpal.dpal_results();
+//        INSTANCE.set_dpal_args(args2);
+//        INSTANCE.dpal(primer1.toString().getBytes(),
+//                new StringBuilder(makeComplement(primer2.toString()))
+//                        .reverse().toString().getBytes(),args2,out2);
+//        double o2 = out2.score / 100;
+//        return Math.max(o1,o2);
+//    }
 
     @SuppressWarnings("Duplicates")
     @Deprecated
@@ -237,6 +223,37 @@ public class HSqlPrimerDesign {
         }else{
             return true;
         }
+    }
+    public static double calcDimer(String theFullSequence, String seq2, int minHairpinLength) {
+/*  compare theCompSeq with theFullSeq starting at theFullSeq[startPos]. Successful matches must be at least minMatch long */
+/* The resulting array is an array of arrays. each result should be an array of 4 integers
+	result[0]: position of start of match in sequence
+	result[1]: position of end of match
+	result[2]: position of the start of the complement (really the end since it would be 3'-5')
+	result[3]: position of the end of the complement (really the start since it would be 3'-5')
+*/
+        int[][] theResults = new int[1][4];
+        int[] theResult;
+        int compPos;
+        int seqPos;
+//        seq2 = makeComplement(seq2);
+        int maxSeqLength=Math.abs(theFullSequence.length()/2); // makes sure that we do not anneal the full length of the primer - that should come out in the dimerization report
+        int maxMatch=0;
+//        double sum =0.0;
+        for (int pos=0; pos < seq2.length()-minHairpinLength; pos++) {
+            int len=pos+minHairpinLength;
+            int beg =theFullSequence.indexOf(seq2.substring(pos,len));
+            if(beg!=-1){
+                if(minHairpinLength>maxMatch)maxMatch=minHairpinLength;
+                while(beg!=-1&&len<seq2.length()){
+                    if(len-pos >maxMatch)maxMatch=len-pos;
+                    beg=theFullSequence.indexOf(seq2.substring(pos,++len));
+                }
+//                System.out.println(seq2.substring(pos, len - 1));
+//                sum += (len - pos - 1.0) / theFullSequence.length();
+            }
+        }
+        return maxMatch/(1.0*theFullSequence.length());
     }
     //finds gc content of a nucleotide
     public static double gcContent(CharSequence primer){
@@ -514,24 +531,31 @@ public class HSqlPrimerDesign {
         }
         return 64.9 +41*(g+c-16.4)/(a+t+g+c);
     }
+    public static double align(String seq1, String seq2) throws CompoundNotFoundException {
+        SubstitutionMatrix<NucleotideCompound> matrix = SubstitutionMatrixHelper.getNuc4_4();
+        SimpleGapPenalty gap = new SimpleGapPenalty();
+        gap.setExtensionPenalty((short)2);
+        gap.setOpenPenalty((short)5);
+        SequencePair<DNASequence,NucleotideCompound> align= Alignments.getPairwiseAlignment(
+                new DNASequence(seq1),new DNASequence(seq2), Alignments.PairwiseSequenceAlignerType.LOCAL,
+                gap,matrix);
+        return align.getNumIdenticals()/(seq1.length()*1.0);
+    }
     @SuppressWarnings("Duplicates")
     public static void locations(Connection connection) throws ClassNotFoundException,
-            SQLException, InstantiationException, IllegalAccessException, IOException {
+            SQLException, InstantiationException, IllegalAccessException, IOException, CompoundNotFoundException {
         long time = System.nanoTime();
         String base = new File("").getAbsolutePath();
-        DpalLoad.main(new String[0]);
-        Dpal_Inst =DpalLoad.INSTANCE_WIN64;
-        System.out.println(Dpal_Inst);
         Map<List<String>, DNASequence> fastas = FastaManager.getMultiFasta();
         Connection db = connection;
         Statement stat = db.createStatement();
         PrintWriter log = new PrintWriter(new File("javalog.log"));
         stat.execute("SET AUTOCOMMIT FALSE;");
-        stat.execute("SET FILES LOG FALSE;");
-        PreparedStatement st = db.prepareStatement("INSERT INTO Primerdb.MatchedPrimers(" +
-                "Bp1, Primer, Bp2, PrimerMatch, Comp,FragAVG,FragVAR,H2SD,L2SD, Cluster, Strain)" +
-                "Values(?,?,?,?,?,?,?,?,?,?,?)");
-        ResultSet call = stat.executeQuery("Select * From Primerdb.Phages;");
+        stat.execute("SET LOG 0;");
+        PreparedStatement st = db.prepareStatement("INSERT INTO MatchedPrimers(" +
+                "Primer, PrimerMatch, Comp,FragAVG,FragVAR,H2SD,L2SD, Cluster, Strain)" +
+                "Values(?,?,?,?,?,?,?,?,?)");
+        ResultSet call = stat.executeQuery("Select * From Phages;");
         List<String[]> phages = new ArrayList<>();
         while (call.next()) {
             String[] r = new String[3];
@@ -539,15 +563,6 @@ public class HSqlPrimerDesign {
             r[1]=call.getString("Cluster");
             r[2]=call.getString("Name");
             phages.add(r);
-//            if(strain.equals("-myco")) {
-//                if (r[2].equals("xkcd")) {
-//                    strain = r[0];
-//                }
-//            }else if(strain.equals("-arthro")){
-//                if (r[2].equals("ArV1")) {
-//                    strain = r[0];
-//                }
-//            }
         }
         call.close();
         Set<String>strains = phages.stream().map(y->y[0]).collect(Collectors.toSet());
@@ -565,12 +580,11 @@ public class HSqlPrimerDesign {
                 String[] clustphages = clustphage.toArray(new String[clustphage.size()]);
                 if (clustphages.length > 1) {
                     try {
-                        ResultSet resultSet = stat.executeQuery("Select * from primerdb.primers" +
+                        ResultSet resultSet = stat.executeQuery("Select * from primers" +
                                 " where Strain ='" + x + "' and Cluster ='" + z + "' and UniqueP = true" +
                                 " and Hairpin = false");
                         while (resultSet.next()) {
-                            int len = resultSet.getInt("Bp");
-                            Primer primer = new Primer(resultSet.getLong("Sequence"),len);
+                            Primer primer = new Primer(resultSet.getLong("Sequence"));
                             primer.setTm(resultSet.getDouble("Tm"));
                             primers.add(primer);
                         }
@@ -605,7 +619,7 @@ public class HSqlPrimerDesign {
                         Map<Long, List<Integer>> alllocs = new HashMap<>();
                         for (Primer primer : primers2) {
                             List<Integer> locs = new ArrayList<>();
-                            String sequence1 = Encoding.twoBitDecode(primer.getSequence(),primer.getBps());
+                            String sequence1 = Encoding.twoBitDecode(primer.getSequence());
                             long frag = Encoding.twoBitEncoding(sequence1.substring(0, 10));
                             List<Integer> integers = seqInd.get(frag);
                             if (integers != null) {
@@ -646,11 +660,8 @@ public class HSqlPrimerDesign {
                                         a.getSequence());
                                 List<Integer> loc2 = locations.get(phage).get(
                                         b.getSequence());
-//                            if(loc1.size()==0){
-//                                System.out.println(phage+" "+a.getSequence());
-//                            }
                                 if (loc1.size() == 0 || loc2.size() == 0) {
-//                                if (loc1.size()!=1||loc2.size()!=1){
+
                                     match = false;
                                     break;
                                 }
@@ -718,20 +729,22 @@ public class HSqlPrimerDesign {
                             c++;
                             long primer1 = primerkey.one.getSequence();
                             long primer2 = primerkey.two.getSequence();
-                            st.setInt(1,primerkey.one.getBps());
-                            st.setLong(2, primer1);
-                            st.setInt(3,primerkey.two.getBps());
-                            st.setLong(4, primer2);
-                            st.setDouble(5, complementarity(
-                                    Encoding.twoBitDecode(primer1,primerkey.one.getBps()),
-                                    Encoding.twoBitDecode(primer2,primerkey.two.getBps()),
-                                    Dpal_Inst));
-                            st.setDouble(6, primerkey.stats.getMean());
-                            st.setDouble(7, primerkey.stats.getVariance());
-                            st.setDouble(8, primerkey.stats.getMean() + 2 * primerkey.stats.getStandardDeviation());
-                            st.setDouble(9, primerkey.stats.getMean() - 2 * primerkey.stats.getStandardDeviation());
-                            st.setString(10, z);
-                            st.setString(11, x);
+                            st.setLong(1, primer1);
+                            st.setLong(2, primer2);
+//                            st.setDouble(3, calcDimer(
+//                                    Encoding.twoBitDecode(primer1),
+//                                    Encoding.twoBitDecode(primer2),
+//                                    4));
+                            st.setDouble(3, align(
+                                    Encoding.twoBitDecode(primer1),
+                                    Encoding.twoBitDecode(primer2)));
+//                            st.setDouble(3,0.0);
+                            st.setDouble(4, primerkey.stats.getMean());
+                            st.setDouble(5, primerkey.stats.getVariance());
+                            st.setDouble(6, primerkey.stats.getMean() + 2 * primerkey.stats.getStandardDeviation());
+                            st.setDouble(7, primerkey.stats.getMean() - 2 * primerkey.stats.getStandardDeviation());
+                            st.setString(8, z);
+                            st.setString(9, x);
                             st.addBatch();
                             i++;
                             if (i == 1000) {
@@ -758,7 +771,7 @@ public class HSqlPrimerDesign {
         }
 
         stat.execute("SET AUTOCOMMIT TRUE;");
-        stat.execute("SET FILES LOG TRUE;");
+        stat.execute("SET LOG 1;");
         st.close();
         stat.close();
         System.out.println("Matches Submitted");
@@ -770,9 +783,9 @@ public class HSqlPrimerDesign {
         db.setAutoCommit(false);
         Statement stat = db.createStatement();
         PrintWriter log = new PrintWriter(new File("checkertest.log"));
-        ImportPhagelist.getInstance().parseAllPhagePrimers(bps);
-        stat.execute("SET FILES LOG FALSE;\n");
-        ResultSet call = stat.executeQuery("Select * From Primerdb.Phages;");
+//        ImportPhagelist.getInstance().parseAllPhagePrimers(bps);
+        stat.execute("SET LOG 0E;\n");
+        ResultSet call = stat.executeQuery("Select * From Phages;");
         List<String[]> phages = new ArrayList<>();
         String strain = "";
         while (call.next()) {
@@ -795,7 +808,7 @@ public class HSqlPrimerDesign {
                                 .filter(a -> a[0].equals(x) && a[1].equals(z)).map(a -> a[2])
                                 .collect(Collectors.toSet());
 
-                        ResultSet resultSet = stat.executeQuery("Select * from primerdb.primers" +
+                        ResultSet resultSet = stat.executeQuery("Select * from primers" +
                                 " where Strain ='" + x + "' and Cluster ='" + z + "' and UniqueP = true" +
                                 " and Bp = " + Integer.valueOf(bps) + " and Hairpin = false");
                         while (resultSet.next()) {
@@ -834,7 +847,7 @@ public class HSqlPrimerDesign {
                     log.flush();
                     System.gc();
                 });
-        stat.execute("SET FILES LOG TRUE\n");
+        stat.execute("SET LOG 0\n");
         stat.close();
         System.out.println("Primers Matched");
     }
@@ -874,15 +887,9 @@ public class HSqlPrimerDesign {
 
     private static class Primer{
         private long Sequence;
-        private int bps;
         private double Tm;
-        public Primer(long sequence,int bps){
+        public Primer(long sequence){
             this.Sequence = sequence;
-            this.bps=bps;
-        }
-
-        public int getBps() {
-            return bps;
         }
 
         public long getSequence() {

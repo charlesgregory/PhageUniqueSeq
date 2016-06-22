@@ -1,3 +1,5 @@
+import org.biojava.nbio.core.exceptions.CompoundNotFoundException;
+
 import java.io.IOException;
 import java.sql.Connection;
 import java.sql.DriverManager;
@@ -30,7 +32,7 @@ public class ArthroUpdate{
     private static final String USER = "SA";
     private static final String PASS = "";
 
-    public static void main(String[] args) throws IOException, SQLException, ClassNotFoundException, IllegalAccessException, InstantiationException {
+    public static void main(String[] args) throws IOException, SQLException, ClassNotFoundException, IllegalAccessException, InstantiationException, CompoundNotFoundException {
         Class.forName(JDBC_DRIVER_HSQL).newInstance();
         conn = DriverManager.getConnection(DB_SERVER_URL,USER,PASS);
         if(args[1].equals("-meta")){

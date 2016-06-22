@@ -34,7 +34,7 @@ public class FastaManager {
             List<String>entry = new ArrayList<>();
             String[] words = x.split(" ");
 //            System.out.println(x);
-            entry.add(words[0].replace(">",""));
+            entry.add(words[0].replace(">","").replace("Mycobacteriophage","Mycobacterium"));
             String name = words[2].replace(",", "").replace("_complete","");
             if(name.equals("sequence")){
                 name = words[0].replace(",", "");

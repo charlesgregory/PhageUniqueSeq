@@ -32,6 +32,7 @@ import java.util.List;
  * Primer3 Bioinformatics 23(10):1289-91
  *
  */
+@Deprecated
 public class DpalLoad{
     public static Dpal INSTANCE_WIN64;
     public interface Dpal extends Library {

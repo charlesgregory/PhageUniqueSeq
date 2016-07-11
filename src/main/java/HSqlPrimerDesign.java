@@ -1,4 +1,3 @@
-import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
 import org.biojava.nbio.alignment.Alignments;
 import org.biojava.nbio.alignment.SimpleGapPenalty;
 import org.biojava.nbio.core.alignment.matrices.SubstitutionMatrixHelper;
@@ -9,8 +8,6 @@ import org.biojava.nbio.core.sequence.DNASequence;
 import org.biojava.nbio.core.sequence.compound.NucleotideCompound;
 
 import java.io.*;
-import java.nio.MappedByteBuffer;
-import java.nio.channels.FileChannel;
 import java.sql.*;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -51,7 +48,7 @@ import java.util.stream.Collectors;
 @SuppressWarnings("Duplicates")
 public class HSqlPrimerDesign {
     static final String JDBC_DRIVER_HSQL = "org.hsqldb.jdbc.JDBCDriver";
-    static final String DB_SERVER_URL ="jdbc:hsqldb:hsql://localhost/primerdbTest";
+    static final String DB_SERVER_URL ="jdbc:hsqldb:hsql://localhost/primerdb";
     static final String DB_URL_HSQL_C = "jdbc:hsqldb:file:database/primerdb;ifexists=true";
     public static Connection conn;
     private static final String USER = "SA";
@@ -71,37 +68,9 @@ public class HSqlPrimerDesign {
         }
     }
 
-    //uses a library compiled from primer3 source code
-//    public static double complementarity(CharSequence primer1, CharSequence primer2,
-//                                         DpalLoad.Dpal INSTANCE){
-//        DpalLoad.Dpal.dpal_args args1 = new DpalLoad.Dpal.dpal_args();
-//        DpalLoad.Dpal.dpal_results out1 = new DpalLoad.Dpal.dpal_results();
-//        INSTANCE.set_dpal_args(args1);
-//        INSTANCE.dpal(primer1.toString().getBytes(),
-//                primer2.toString().getBytes(),args1,out1);
-//        double o1 = out1.score / 100;
-//        DpalLoad.Dpal.dpal_args args2 = new DpalLoad.Dpal.dpal_args();
-//        DpalLoad.Dpal.dpal_results out2 = new DpalLoad.Dpal.dpal_results();
-//        INSTANCE.set_dpal_args(args2);
-//        INSTANCE.dpal(primer1.toString().getBytes(),
-//                new StringBuilder(makeComplement(primer2.toString()))
-//                        .reverse().toString().getBytes(),args2,out2);
-//        double o2 = out2.score / 100;
-//        return Math.max(o1,o2);
-//    }
 
-    @SuppressWarnings("Duplicates")
-    @Deprecated
-    public static int hairpin(CharSequence primer1, CharSequence primer2, ThalLoad.Thal INSTANCE){
-        ThalLoad.Thal.thal_args args = new ThalLoad.Thal.thal_args();
-        ThalLoad.Thal.thal_results out = new ThalLoad.Thal.thal_results();
-        INSTANCE.set_thal_default_args(args);
-        args.temp = 70.0;
-        INSTANCE.thal(primer1.toString().getBytes(),primer2.toString().getBytes(),args,out);
-        System.out.println(new String(out.msg));
-        System.out.println(out.temp);
-        return args.dimer;
-    }
+
+
     //gets an index in a primer for the calcHairpin
     private static int[] getIndexOf(String seq, String subSeq, int startIndex, int minMatch)
     {
@@ -534,12 +503,26 @@ public class HSqlPrimerDesign {
     public static double align(String seq1, String seq2) throws CompoundNotFoundException {
         SubstitutionMatrix<NucleotideCompound> matrix = SubstitutionMatrixHelper.getNuc4_4();
         SimpleGapPenalty gap = new SimpleGapPenalty();
-        gap.setExtensionPenalty((short)2);
-        gap.setOpenPenalty((short)5);
         SequencePair<DNASequence,NucleotideCompound> align= Alignments.getPairwiseAlignment(
                 new DNASequence(seq1),new DNASequence(seq2), Alignments.PairwiseSequenceAlignerType.LOCAL,
                 gap,matrix);
-        return align.getNumIdenticals()/(seq1.length()*1.0);
+        int gapp =0;
+        for(char c:align.getQuery().toString().toCharArray()){
+            if(c=='-'){
+                gapp++;
+            }
+        }
+        for(char c:align.getTarget().toString().toCharArray()){
+            if(c=='-'){
+                gapp++;
+            }
+        }
+        int nonmatch = align.getQuery().toString().length()-gapp-align.getNumIdenticals();
+        double score = (align.getNumIdenticals())+((-1.0)*nonmatch)+((-2.0*gapp));
+        if(score<0.0)
+            score=0.0;
+
+        return score;
     }
     @SuppressWarnings("Duplicates")
     public static void locations(Connection connection) throws ClassNotFoundException,
@@ -552,9 +535,10 @@ public class HSqlPrimerDesign {
         PrintWriter log = new PrintWriter(new File("javalog.log"));
         stat.execute("SET AUTOCOMMIT FALSE;");
         stat.execute("SET LOG 0;");
-        PreparedStatement st = db.prepareStatement("INSERT INTO MatchedPrimers(" +
-                "Primer, PrimerMatch, Comp,FragAVG,FragVAR,H2SD,L2SD, Cluster, Strain)" +
-                "Values(?,?,?,?,?,?,?,?,?)");
+        DBManager insert = new DBManager(connection);
+//        PreparedStatement st = db.prepareStatement("INSERT INTO MatchedPrimers(" +
+//                "Primer, PrimerMatch, Comp,FragAVG,FragVAR,H2SD,L2SD, Cluster, Strain)" +
+//                "Values(?,?,?,?,?,?,?,?,?)");
         ResultSet call = stat.executeQuery("Select * From Phages;");
         List<String[]> phages = new ArrayList<>();
         while (call.next()) {
@@ -572,197 +556,23 @@ public class HSqlPrimerDesign {
 //        String z ="A1";
             for (String z : clusters) {
                 System.out.println("Starting:" + z);
-                List<Primer> primers = new ArrayList<>();
-                Set<Matches> matched = new HashSet<>();
+                Map<Long,Double>primerTm = new HashMap<>();
+                Set<Long> primers = new HashSet<>();
+//                Set<Matches> matched = new HashSet<>();
                 Set<String> clustphage = phages.stream()
                         .filter(a -> a[0].equals(x) && a[1].equals(z)).map(a -> a[2])
                         .collect(Collectors.toSet());
                 String[] clustphages = clustphage.toArray(new String[clustphage.size()]);
                 if (clustphages.length > 1) {
-                    try {
-                        ResultSet resultSet = stat.executeQuery("Select * from primers" +
-                                " where Strain ='" + x + "' and Cluster ='" + z + "' and UniqueP = true" +
-                                " and Hairpin = false");
-                        while (resultSet.next()) {
-                            Primer primer = new Primer(resultSet.getLong("Sequence"));
-                            primer.setTm(resultSet.getDouble("Tm"));
-                            primers.add(primer);
-                        }
-                        resultSet.close();
-                    } catch (SQLException e) {
-                        e.printStackTrace();
-                        System.out.println("Error occurred at " + x + " " + z);
+                    if(clustphages.length>10) {
+                        fullPrimerMatching(stat, x, z, primerTm, primers, clustphage,
+                                fastas, clustphages, insert, time);
                     }
-                    System.out.println(primers.size());
-                    Set<Primer> primerlist2 = primers.stream().collect(Collectors.toSet());
-                    Primer[] primers2 = primerlist2.toArray(new Primer[primerlist2.size()]);
-                    Map<String, Map<Long, List<Integer>>> locations = Collections.synchronizedMap(
-                            new HashMap<>());
-                    clustphage.stream().forEach(phage -> {
-                        List<String>id = new ArrayList<>();
-                        id.add(x);
-                        id.add(z);
-                        id.add(phage);
-                        String sequence = fastas.get(id).getSequenceAsString()+
-                                fastas.get(id).getReverseComplement().getSequenceAsString();
-                        Map<Long, List<Integer>> seqInd = new HashMap<>();
-                        for (int i = 0; i <= sequence.length() - 10; i++) {
-                            long sub = Encoding.twoBitEncoding(sequence.substring(i, i + 10));
-                            if (seqInd.containsKey(sub)) {
-                                seqInd.get(sub).add(i);
-                            } else {
-                                List<Integer> list = new ArrayList<>();
-                                list.add(i);
-                                seqInd.put(sub, list);
-                            }
-                        }
-                        Map<Long, List<Integer>> alllocs = new HashMap<>();
-                        for (Primer primer : primers2) {
-                            List<Integer> locs = new ArrayList<>();
-                            String sequence1 = Encoding.twoBitDecode(primer.getSequence());
-                            long frag = Encoding.twoBitEncoding(sequence1.substring(0, 10));
-                            List<Integer> integers = seqInd.get(frag);
-                            if (integers != null) {
-                                for (Integer i : integers) {
-                                    if ((sequence1.length() + i) < sequence.length() &&
-                                            sequence.substring(i, sequence1.length() + i).equals(sequence1)) {
-                                        locs.add(i);
-                                    }
-                                }
-                            }
-                            alllocs.put(Encoding.twoBitEncoding(sequence1), locs);
-                        }
-                        locations.put(phage, alllocs);
-                    });
-                    System.out.println("locations found");
-                    System.out.println((System.nanoTime() - time) / Math.pow(10, 9) / 60.0);
-                    final int[] k = new int[]{0};
-                    primerlist2.parallelStream().forEach(a -> {
-                        int matches = 0;
-                        int i = 0;
-                        while (primers2[i] != a) {
-                            i++;
-                        }
-                        for (int j = i + 1; j < primers2.length; j++) {
-                            double[] frags = new double[clustphages.length];
-                            int phageCounter = 0;
-                            Primer b = primers2[j];
-                            boolean match = true;
-                            if (matches > 0) {
-                                break;
-                            }
-                            if (Math.abs(a.getTm() - b.getTm()) > 5.0 ||
-                                    a.getSequence()==(b.getSequence())) {
-                                continue;
-                            }
-                            for (String phage : clustphages) {
-                                List<Integer> loc1 = locations.get(phage).get(
-                                        a.getSequence());
-                                List<Integer> loc2 = locations.get(phage).get(
-                                        b.getSequence());
-                                if (loc1.size() == 0 || loc2.size() == 0) {
-
-                                    match = false;
-                                    break;
-                                }
-                                boolean found = false;
-                                int fragCount =0;
-                                int l1 = loc1.get(0);
-                                int l2 = loc2.get(0);
-                                int count1 = 0;
-                                int count2 = 0;
-                                int frag = Math.abs(l1 - l2);
-                                while (!found) {
-                                    if (frag >= 500 &&
-                                            frag <= 2000) {
-                                        fragCount++;
-                                        if(++count1< loc1.size())
-                                            l1 = loc1.get(count1);
-                                        else if(++count2< loc2.size())
-                                            l2 = loc2.get(count2);
-                                    } else if (l1 < l2 && frag < 500) {
-                                        count2++;
-                                    } else if (l1 > l2 && frag < 500) {
-                                        count1++;
-                                    } else if (l1 > l2 && frag > 2000) {
-                                        count2++;
-                                    } else if (l1 < l2 && frag > 2000) {
-                                        count1++;
-                                    } else {
-                                        break;
-                                    }
-                                    if (count1 < loc1.size() &&
-                                            count2 < loc2.size()) {
-                                        l1 = loc1.get(count1);
-                                        l2 = loc2.get(count2);
-                                        frag = Math.abs(l1 - l2);
-                                    } else {
-                                        if(fragCount==1){
-                                            found=true;
-                                            frags[phageCounter++] = frag + 0.0;
-                                        }
-                                        else{
-                                            break;
-                                        }
-                                    }
-                                }
-                                if (!found) {
-                                    match = false;
-                                    break;
-                                }
-
-                            }
-                            if (match) {
-                                matches++;
-                                matched.add(new Matches(a, b, frags));
-                            }
-                        }
-//                    k[0]++;
-//                    System.out.println(k[0]);
-                    });
-                    System.out.println((System.nanoTime() - time) / Math.pow(10, 9) / 60.0);
-                    System.out.println("Primers matched");
-                    int c = 0;
-                    int i = 0;
-                    try {
-                        for (Matches primerkey : matched) {
-                            c++;
-                            long primer1 = primerkey.one.getSequence();
-                            long primer2 = primerkey.two.getSequence();
-                            st.setLong(1, primer1);
-                            st.setLong(2, primer2);
-//                            st.setDouble(3, calcDimer(
-//                                    Encoding.twoBitDecode(primer1),
-//                                    Encoding.twoBitDecode(primer2),
-//                                    4));
-                            st.setDouble(3, align(
-                                    Encoding.twoBitDecode(primer1),
-                                    Encoding.twoBitDecode(primer2)));
-//                            st.setDouble(3,0.0);
-                            st.setDouble(4, primerkey.stats.getMean());
-                            st.setDouble(5, primerkey.stats.getVariance());
-                            st.setDouble(6, primerkey.stats.getMean() + 2 * primerkey.stats.getStandardDeviation());
-                            st.setDouble(7, primerkey.stats.getMean() - 2 * primerkey.stats.getStandardDeviation());
-                            st.setString(8, z);
-                            st.setString(9, x);
-                            st.addBatch();
-                            i++;
-                            if (i == 1000) {
-                                i = 0;
-                                st.executeBatch();
-                                db.commit();
-                            }
-                        }
-
-                        if (i > 0) {
-                            st.executeBatch();
-                            db.commit();
-                        }
-                    } catch (SQLException e) {
-                        e.printStackTrace();
-                        System.out.println("Error occurred at " + x + " " + z);
+                    else{
+                        shortPrimerMatching(stat, x, z, primerTm, primers, clustphage,
+                                fastas, clustphages, insert, time);
                     }
-                    System.out.println(c);
+                    insert.matchPrimerInsertFinal();
                 }
                 log.println(z);
                 log.flush();
@@ -772,152 +582,530 @@ public class HSqlPrimerDesign {
 
         stat.execute("SET AUTOCOMMIT TRUE;");
         stat.execute("SET LOG 1;");
-        st.close();
+//        st.close();
         stat.close();
         System.out.println("Matches Submitted");
     }
-    public static void checker(Connection connection, int bps) throws ClassNotFoundException,
-            SQLException, InstantiationException, IllegalAccessException, IOException {
-        String base = new File("").getAbsolutePath();
-        Connection db = connection;
-        db.setAutoCommit(false);
-        Statement stat = db.createStatement();
-        PrintWriter log = new PrintWriter(new File("checkertest.log"));
-//        ImportPhagelist.getInstance().parseAllPhagePrimers(bps);
-        stat.execute("SET LOG 0E;\n");
-        ResultSet call = stat.executeQuery("Select * From Phages;");
-        List<String[]> phages = new ArrayList<>();
-        String strain = "";
-        while (call.next()) {
-            String[] r = new String[3];
-            r[0]=call.getString("Strain");
-            r[1]=call.getString("Cluster");
-            r[2]=call.getString("Name");
-            phages.add(r);
-            if(r[2].equals("xkcd")) {
-                strain = r[0];
+    public static void shortPrimerMatching(Statement stat,String x, String z,
+                                          Map<Long,Double> primerTm,Set<Long> primers,
+                                          Set<String> clustphage,
+                                          Map<List<String>, DNASequence>fastas,
+                                          String[]clustphages,
+                                          DBManager insert,
+                                          long time){
+        try {
+            ResultSet resultSet = stat.executeQuery("Select * from primers" +
+                    " where Strain ='" + x + "' and Cluster ='" + z + "' and UniqueP = true" +
+                    " and Hairpin = false");
+            while (resultSet.next()) {
+//                            Primer primer = new Primer(resultSet.getLong("Sequence"));
+                long primer =resultSet.getLong("Sequence");
+//                            primer.setTm(HSqlPrimerDesign.easytm(Encoding.twoBitDecode(primer.getSequence())));
+//                            primers.add(primer);
+                if(!primerTm.containsKey(primer)) {
+                    primerTm.put(primer, HSqlPrimerDesign.easytm(
+                            Encoding.twoBitDecode(primer)));
+                }
+                primers.add(primer);
             }
+            resultSet.close();
+        } catch (SQLException e) {
+            e.printStackTrace();
+            System.out.println("Error occurred at " + x + " " + z);
         }
-        String x = strain;
-        phages.stream().filter(y->y[0].equals(x)).map(y->y[1]).collect(Collectors.toSet())
-                .forEach(z->{
-                    System.out.println("Starting:"+z);
-                    try {
-                        List<String> primers = new ArrayList<String>();
-                        Set<String> clustphages = phages.stream()
-                                .filter(a -> a[0].equals(x) && a[1].equals(z)).map(a -> a[2])
-                                .collect(Collectors.toSet());
-
-                        ResultSet resultSet = stat.executeQuery("Select * from primers" +
-                                " where Strain ='" + x + "' and Cluster ='" + z + "' and UniqueP = true" +
-                                " and Bp = " + Integer.valueOf(bps) + " and Hairpin = false");
-                        while (resultSet.next()) {
-                            primers.add(resultSet.getString("Sequence"));
+        System.out.println(primers.size());
+//                    Set<Long> primerlist2 = primers.stream().collect(Collectors.toSet());
+//                    Long[] primers2 = primerlist2.toArray(new Long[primerlist2.size()]);
+        Long[] primers2 = primers.toArray(new Long[primers.size()]);
+        Map<String, Map<Long, Primer>> locations = Collections.synchronizedMap(
+                new HashMap<>());
+        clustphage.stream().forEach(phage -> {
+            List<String>id = new ArrayList<>();
+            id.add(x);
+            id.add(z);
+            id.add(phage);
+            String sequence = fastas.get(id).getSequenceAsString();
+            Map<Long, int[]> seqInd = new HashMap<>();
+            for (int i = 0; i <= sequence.length() - 10; i++) {
+                long sub = Encoding.twoBitEncoding(sequence.substring(i, i + 10));
+                if (seqInd.containsKey(sub)) {
+                    int[] r =seqInd.get(sub);
+                    int[] temp = new int[r.length+1];
+                    System.arraycopy(r, 0, temp, 0, r.length);
+                    temp[r.length]=i;
+                    seqInd.replace(sub,temp);
+                } else {
+                    int[] list =new int[1];
+                    list[0]=i;
+                    seqInd.put(sub, list);
+                }
+            }
+            Map<Long, Primer> alllocs = new HashMap<>();
+            for (Long primer : primers2) {
+//                            List<Integer> locs = new ArrayList<>();
+                int[] locs = new int[0];
+                String sequence1 = Encoding.twoBitDecode(primer);
+                long frag = Encoding.twoBitEncoding(sequence1.substring(0, 10));
+                int[] integers = seqInd.get(frag);
+                if (integers != null) {
+                    for (int i : integers) {
+                        if ((sequence1.length() + i) < sequence.length() &&
+                                sequence.substring(i, sequence1.length() + i).equals(sequence1)) {
+//                                        locs.add(i);
+                            int[] temp = new int[locs.length+1];
+                            System.arraycopy(locs, 0, temp, 0, locs.length);
+                            temp[locs.length]=i;
+                            locs=temp;
                         }
-                        if(primers.size()>0) {
-                            for (int i = 0; i < 4; i++) {
-                                String primer = primers.get(i);
-                                for (String clustphage : clustphages) {
-                                    if (!CSV.readCSV(base + "/PhageData/" + Integer.toString(bps)
-                                            + clustphage + ".csv")
-                                            .contains(primer))
-                                        log.println("Problem " + z);
-                                }
-                            }
-                            Set<String> nonclustphages = phages.stream()
-                                    .filter(a -> a[0].equals(x) && !a[1].equals(z)).map(a -> a[2])
-                                    .collect(Collectors.toSet());
-                            log.println("Cluster phages done");
-                            for (int i = 0; i < 4; i++) {
-                                String primer = primers.get(i);
-                                for (String nonclustphage : nonclustphages) {
-                                    if (CSV.readCSV(base + "/PhageData/" + Integer.toString(bps)
-                                            + nonclustphage + ".csv")
-                                            .contains(primer))
-                                        log.println("Problem " + z);
-                                }
-                            }
-                            log.println("NonCluster phages done");
-                        }
-                    }catch (SQLException e){
-                        e.printStackTrace();
-                        System.out.println("Error occurred at " + x + " " + z);
                     }
-                    log.println(z);
-                    log.flush();
-                    System.gc();
-                });
-        stat.execute("SET LOG 0\n");
-        stat.close();
-        System.out.println("Primers Matched");
-    }
-    @Deprecated
-    public static String readFile(String file) throws IOException {
-        FileChannel inChannel = new RandomAccessFile(file, "r").getChannel();
-        MappedByteBuffer buffer = inChannel.map(FileChannel.MapMode.READ_ONLY, 0, inChannel.size());
-        char ch;
-        StringBuffer line = new StringBuffer();
-        for (int i = 0; i < buffer.limit(); i++)
-        {
-            ch = ((char) buffer.get());
-                line.append(ch);
+                }
+                int[] locs2 = new int[0];
+                String sequence2 = Encoding.twoBitDecode(Encoding.reEncodeReverseComplementTwoBit(primer));
+                long frag2 = Encoding.twoBitEncoding(sequence2.substring(0, 10));
+                int[] integersr = seqInd.get(frag2);
+                if (integersr != null) {
+                    for (int i : integersr) {
+                        if ((sequence2.length() + i) < sequence.length() &&
+                                sequence.substring(i, sequence2.length() + i).equals(sequence2)) {
+//                                        locs.add(i);
+                            int[] temp = new int[locs2.length+1];
+                            System.arraycopy(locs2, 0, temp, 0, locs2.length);
+                            temp[locs2.length]=i;
+                            locs2=temp;
+                        }
+                    }
+                }
+                alllocs.put(Encoding.twoBitEncoding(sequence1), new Primer(locs,locs2));
+            }
+            locations.put(phage, alllocs);
+        });
+        System.out.println("locations found");
+        System.out.println((System.nanoTime() - time) / Math.pow(10, 9) / 60.0);
+        final int[] k = new int[]{0};
+        for(int i=0; i < primers2.length; i++){
+            int c = 0;
+            int i3 = 0;
+            int matches = 0;
+            long a = primers2[i];
+//                        int i = 0;
+//                        while (!Objects.equals(primers2[i], a)) {
+//                            i++;
+//                        }
+            for (int j = i + 1; j < primers2.length; j++) {
+                double[] frags = new double[clustphages.length];
+                int phageCounter = 0;
+                long b = primers2[j];
+                boolean match = true;
+                if (matches > 0) {
+                    break;
+                }
+                if (Math.abs(primerTm.get(a) - primerTm.get(b))
+                        > 5.0) {
+                    continue;
+                }
+                for (String phage : clustphages) {
+                    int[] loc1f = locations.get(phage).get(
+                            a).foward;
+//                    int[] loc1r = locations.get(phage).get(
+//                            a).reverse;
+//                    int[] loc2f = locations.get(phage).get(
+//                            b).foward;
+                    int[] loc2r = locations.get(phage).get(
+                            b).reverse;
+                    if (loc1f.length == 0 || loc2r.length == 0) {
+                        match = false;
+                        break;
+                    }
+                    boolean found = false;
+                    int fragCount =0;
+                    int l1 = loc1f[0];
+                    int l2 = loc2r[0];
+                    int count1 = 0;
+                    int count2 = 0;
+                    int frag = l2-l1;
+                    while (!found) {
+                        if (frag < 500) {
+                            count2++;
+                        } else if (frag > 2000) {
+                            count1++;
+                        }else{
+                            fragCount++;
+                            if(count1+1< loc1f.length)
+                                count1++;
+                            else
+                                count2++;
+                        }
+                        if (count1 < loc1f.length &&
+                                count2 < loc2r.length) {
+                            l1 = loc1f[count1];
+                            l2 = loc2r[count2];
+                            frag = l2-l1;
+                        } else {
+                            if(fragCount==1){
+                                found=true;
+                                frags[phageCounter++] = frag + 0.0;
+                            }
+                            else{
+                                break;
+                            }
+                        }
+                    }
+                    if (!found) {
+                        match = false;
+                        break;
+                    }
+                }
+                if (match) {
+                    matches++;
+//                                matched.add(new Matches(a, b, frags));
+                    try {
+                        insert.matchedPrimerSubmit(a,Encoding.reEncodeReverseComplementTwoBit(b),frags,z,x);
+                    } catch (SQLException | CompoundNotFoundException e) {
+                        e.printStackTrace();
+                    }
+                }
+                for (String phage : clustphages) {
+//                    int[] loc1f = locations.get(phage).get(
+//                            a).foward;
+//                    loc1r really
+                    int[] loc1f = locations.get(phage).get(
+                            a).reverse;
+//                    loc2f really
+                    int[] loc2r = locations.get(phage).get(
+                            b).foward;
+//                    int[] loc2r = locations.get(phage).get(
+//                            b).foward;
+                    if (loc1f.length == 0 || loc2r.length == 0) {
+                        match = false;
+                        break;
+                    }
+                    boolean found = false;
+                    int fragCount =0;
+                    int l1 = loc1f[0];
+                    int l2 = loc2r[0];
+                    int count1 = 0;
+                    int count2 = 0;
+                    int frag = l2-l1;
+                    while (!found) {
+                        if (frag < 500) {
+                            count2++;
+                        } else if (frag > 2000) {
+                            count1++;
+                        }else{
+                            fragCount++;
+                            if(count1+1< loc1f.length)
+                                count1++;
+                            else
+                                count2++;
+                        }
+                        if (count1 < loc1f.length &&
+                                count2 < loc2r.length) {
+                            l1 = loc1f[count1];
+                            l2 = loc2r[count2];
+                            frag = l2-l1;
+                        } else {
+                            if(fragCount==1){
+                                found=true;
+                                frags[phageCounter++] = frag + 0.0;
+                            }
+                            else{
+                                break;
+                            }
+                        }
+                    }
+                    if (!found) {
+                        match = false;
+                        break;
+                    }
+                }
+                if (match) {
+                    matches++;
+//                                matched.add(new Matches(a, b, frags));
+                    try {
+                        insert.matchedPrimerSubmit(b,Encoding.reEncodeReverseComplementTwoBit(a),frags,z,x);
+                    } catch (SQLException | CompoundNotFoundException e) {
+                        e.printStackTrace();
+                    }
+                }
+            }
+
+//                    k[0]++;
+//                    System.out.println(k[0]);
+//            System.out.println(i);
+//            System.out.println(insert.count);
         }
-        return line.toString();
+        System.out.println((System.nanoTime() - time) / Math.pow(10, 9) / 60.0);
+        System.out.println("Primers matched");
     }
-    @Deprecated
-    public static String complementWC(String dna){
-        StringBuilder builder = new StringBuilder();
-        for(int i=0;i<dna.length();i++){
-            char c = dna.charAt(i);
-            if(c == 'T'){
-                builder.append('A');
+    public static void fullPrimerMatching(Statement stat,String x, String z,
+                                          Map<Long,Double> primerTm,Set<Long> primers,
+                                          Set<String> clustphage,
+                                          Map<List<String>, DNASequence>fastas,
+                                          String[]clustphages,
+                                          DBManager insert,
+                                          long time){
+        try {
+            ResultSet resultSet = stat.executeQuery("Select * from primers" +
+                    " where Strain ='" + x + "' and Cluster ='" + z + "' and UniqueP = true" +
+                    " and Hairpin = false");
+            while (resultSet.next()) {
+//                            Primer primer = new Primer(resultSet.getLong("Sequence"));
+                long primer =resultSet.getLong("Sequence");
+//                            primer.setTm(HSqlPrimerDesign.easytm(Encoding.twoBitDecode(primer.getSequence())));
+//                            primers.add(primer);
+                if(!primerTm.containsKey(primer)) {
+                    primerTm.put(primer, HSqlPrimerDesign.easytm(
+                            Encoding.twoBitDecode(primer)));
+                }
+                primers.add(primer);
             }
-            if(c == 'A'){
-                builder.append('T');
-            }
-            if(c == 'C'){
-                builder.append('G');
-            }
-            if(c == 'G'){
-                builder.append('T');
-            }
+            resultSet.close();
+        } catch (SQLException e) {
+            e.printStackTrace();
+            System.out.println("Error occurred at " + x + " " + z);
         }
-        return builder.reverse().toString();
+        System.out.println(primers.size());
+//                    Set<Long> primerlist2 = primers.stream().collect(Collectors.toSet());
+//                    Long[] primers2 = primerlist2.toArray(new Long[primerlist2.size()]);
+        Long[] primers2 = primers.toArray(new Long[primers.size()]);
+        Map<String, Map<Long, Primer>> locations = Collections.synchronizedMap(
+                new HashMap<>());
+        clustphage.stream().forEach(phage -> {
+            List<String>id = new ArrayList<>();
+            id.add(x);
+            id.add(z);
+            id.add(phage);
+            String sequence = fastas.get(id).getSequenceAsString();
+            Map<Long, int[]> seqInd = new HashMap<>();
+            for (int i = 0; i <= sequence.length() - 10; i++) {
+                long sub = Encoding.twoBitEncoding(sequence.substring(i, i + 10));
+                if (seqInd.containsKey(sub)) {
+                    int[] r =seqInd.get(sub);
+                    int[] temp = new int[r.length+1];
+                    System.arraycopy(r, 0, temp, 0, r.length);
+                    temp[r.length]=i;
+                    seqInd.replace(sub,temp);
+                } else {
+                    int[] list =new int[1];
+                    list[0]=i;
+                    seqInd.put(sub, list);
+                }
+            }
+            Map<Long, Primer> alllocs = new HashMap<>();
+            for (Long primer : primers2) {
+//                            List<Integer> locs = new ArrayList<>();
+                int[] locs = new int[0];
+                String sequence1 = Encoding.twoBitDecode(primer);
+                long frag = Encoding.twoBitEncoding(sequence1.substring(0, 10));
+                int[] integers = seqInd.get(frag);
+                if (integers != null) {
+                    for (int i : integers) {
+                        if ((sequence1.length() + i) < sequence.length() &&
+                                sequence.substring(i, sequence1.length() + i).equals(sequence1)) {
+//                                        locs.add(i);
+                            int[] temp = new int[locs.length+1];
+                            System.arraycopy(locs, 0, temp, 0, locs.length);
+                            temp[locs.length]=i;
+                            locs=temp;
+                        }
+                    }
+                }
+                int[] locs2 = new int[0];
+                String sequence2 = Encoding.twoBitDecode(Encoding.reEncodeReverseComplementTwoBit(primer));
+                long frag2 = Encoding.twoBitEncoding(sequence2.substring(0, 10));
+                int[] integersr = seqInd.get(frag2);
+                if (integersr != null) {
+                    for (int i : integersr) {
+                        if ((sequence2.length() + i) < sequence.length() &&
+                                sequence.substring(i, sequence2.length() + i).equals(sequence2)) {
+//                                        locs.add(i);
+                            int[] temp = new int[locs2.length+1];
+                            System.arraycopy(locs2, 0, temp, 0, locs2.length);
+                            temp[locs2.length]=i;
+                            locs2=temp;
+                        }
+                    }
+                }
+                alllocs.put(Encoding.twoBitEncoding(sequence1), new Primer(locs,locs2));
+            }
+            locations.put(phage, alllocs);
+        });
+        System.out.println("locations found");
+        System.out.println((System.nanoTime() - time) / Math.pow(10, 9) / 60.0);
+        final int[] k = new int[]{0};
+        for(int i=0; i < primers2.length; i++){
+            int c = 0;
+            int i3 = 0;
+            int matches = 0;
+            long a = primers2[i];
+//                        int i = 0;
+//                        while (!Objects.equals(primers2[i], a)) {
+//                            i++;
+//                        }
+            for (int j = i + 1; j < primers2.length; j++) {
+                double[] frags = new double[clustphages.length];
+                int phageCounter = 0;
+                long b = primers2[j];
+                boolean match = true;
+//                            if (matches > 0) {
+//                                break;
+//                            }
+                if (Math.abs(primerTm.get(a) - primerTm.get(b))
+                        > 5.0) {
+                    continue;
+                }
+                for (String phage : clustphages) {
+                    int[] loc1f = locations.get(phage).get(
+                            a).foward;
+//                    int[] loc1r = locations.get(phage).get(
+//                            a).reverse;
+//                    int[] loc2f = locations.get(phage).get(
+//                            b).foward;
+                    int[] loc2r = locations.get(phage).get(
+                            b).reverse;
+                    if (loc1f.length == 0 || loc2r.length == 0) {
+                        match = false;
+                        break;
+                    }
+                    boolean found = false;
+                    int fragCount = 0;
+                    int l1 = loc1f[0];
+                    int l2 = loc2r[0];
+                    int count1 = 0;
+                    int count2 = 0;
+                    int frag = l2 - l1;
+                    while (!found) {
+                        if (frag < 500) {
+                            count2++;
+                        } else if (frag > 2000) {
+                            count1++;
+                        } else {
+                            fragCount++;
+                            if (count1 + 1 < loc1f.length)
+                                count1++;
+                            else
+                                count2++;
+                        }
+                        if (count1 < loc1f.length &&
+                                count2 < loc2r.length) {
+                            l1 = loc1f[count1];
+                            l2 = loc2r[count2];
+                            frag = l2 - l1;
+                        } else {
+                            if (fragCount == 1) {
+                                found = true;
+                                frags[phageCounter++] = frag + 0.0;
+                            } else {
+                                break;
+                            }
+                        }
+                    }
+                    if (!found) {
+                        match = false;
+                        break;
+                    }
+                }
+                if (match) {
+                    matches++;
+//                                matched.add(new Matches(a, b, frags));
+                    try {
+                        insert.matchedPrimerSubmit(a, Encoding.reEncodeReverseComplementTwoBit(b), frags, z, x);
+                    } catch (SQLException | CompoundNotFoundException e) {
+                        e.printStackTrace();
+                    }
+                }
+                for (String phage : clustphages) {
+//                    int[] loc1f = locations.get(phage).get(
+//                            a).foward;
+//                    loc1r really
+                    int[] loc1f = locations.get(phage).get(
+                            a).reverse;
+//                    loc2f really
+                    int[] loc2r = locations.get(phage).get(
+                            b).foward;
+//                    int[] loc2r = locations.get(phage).get(
+//                            b).foward;
+                    if (loc1f.length == 0 || loc2r.length == 0) {
+                        match = false;
+                        break;
+                    }
+                    boolean found = false;
+                    int fragCount = 0;
+                    int l1 = loc1f[0];
+                    int l2 = loc2r[0];
+                    int count1 = 0;
+                    int count2 = 0;
+                    int frag = l2 - l1;
+                    while (!found) {
+                        if (frag < 500) {
+                            count2++;
+                        } else if (frag > 2000) {
+                            count1++;
+                        } else {
+                            fragCount++;
+                            if (count1 + 1 < loc1f.length)
+                                count1++;
+                            else
+                                count2++;
+                        }
+                        if (count1 < loc1f.length &&
+                                count2 < loc2r.length) {
+                            l1 = loc1f[count1];
+                            l2 = loc2r[count2];
+                            frag = l2 - l1;
+                        } else {
+                            if (fragCount == 1) {
+                                found = true;
+                                frags[phageCounter++] = frag + 0.0;
+                            } else {
+                                break;
+                            }
+                        }
+                    }
+                    if (!found) {
+                        match = false;
+                        break;
+                    }
+                }
+                if (match) {
+                    matches++;
+//                                matched.add(new Matches(a, b, frags));
+                    try {
+                        insert.matchedPrimerSubmit(b, Encoding.reEncodeReverseComplementTwoBit(a), frags, z, x);
+                    } catch (SQLException | CompoundNotFoundException e) {
+                        e.printStackTrace();
+                    }
+                }
+            }
+//                    k[0]++;
+//                    System.out.println(k[0]);
+//            System.out.println(i);
+//            System.out.println(insert.count);
+        }
+        System.out.println((System.nanoTime() - time) / Math.pow(10, 9) / 60.0);
+        System.out.println("Primers matched");
     }
 
     private static class Primer{
-        private long Sequence;
-        private double Tm;
-        public Primer(long sequence){
-            this.Sequence = sequence;
-        }
-
-        public long getSequence() {
-            return Sequence;
-        }
-
-        public void setSequence(long sequence) {
-            Sequence = sequence;
-        }
-
-        public double getTm() {
-            return Tm;
-        }
-
-        public void setTm(double tm) {
-            Tm = tm;
+        int[] foward;
+        int[] reverse;
+        public Primer(int[] f, int[] r){
+            foward=f;
+            reverse=r;
         }
     }
-    private static class Matches{
-        Primer one;
-        Primer two;
-        DescriptiveStatistics stats;
-        public Matches(Primer primer1, Primer primer2, double[] arr){
-            one=primer1;
-            two=primer2;
-            stats=new DescriptiveStatistics(arr);
-        }
-
-    }
-
+//    private static class Matches{
+////        Primer one;
+////        Primer two;
+//        long one;
+//        long two;
+//        DescriptiveStatistics stats;
+//        public Matches(long primer1, long primer2, double[] arr){
+//            one=primer1;
+//            two=primer2;
+//            stats=new DescriptiveStatistics(arr);
+//        }
+//
+//    }
 }
+

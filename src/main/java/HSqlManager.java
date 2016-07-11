@@ -33,10 +33,11 @@ import java.util.stream.Collectors;
 public class HSqlManager {
     static final String JDBC_DRIVER_HSQL = "org.hsqldb.jdbc.JDBCDriver";
     static final String JDBC_DRIVER_H2 = "org.h2.Driver";
-    static final String DB_SERVER_URL ="jdbc:hsqldb:hsql://localhost/primerdbTest";
-    static final String DB_SERVER_URL_H2 ="jdbc:h2:primerdbTest;MULTI_THREADED=1;FILE_LOCK=NO";
+    static final String DB_SERVER_URL ="jdbc:hsqldb:hsql://localhost/primerdb";
+    static final String DB_SERVER_URL_H2 ="jdbc:h2:primerdb;LOG=0;LOCK_MODE=0;CACHE_SIZE=65536;" +
+            "UNDO_LOG=0;WRITE_DELAY=20";
     static final String DB_SERVER_URL_Header ="jdbc:hsqldb:hsql://localhost/";
-    static final String DB_SERVER_URL_Exists="primerdbTest;ifexists=true";
+    static final String DB_SERVER_URL_Exists="primerdb;ifexists=true";
     static final String DB_SERVER_URL_Mod=";file:database/";
     static final String DB_URL_HSQL_C = "jdbc:hsqldb:file:database/primerdb";
     private static ImportPhagelist INSTANCE;
@@ -51,7 +52,6 @@ public class HSqlManager {
     private HSqlManager() throws IOException,
             ClassNotFoundException, SQLException, IllegalAccessException, InstantiationException {
         INSTANCE = ImportPhagelist.getInstance();
-//        Class.forName(JDBC_DRIVER_HSQL).newInstance();
         Class.forName(JDBC_DRIVER_H2).newInstance();
         conn = DriverManager.getConnection(DB_SERVER_URL,USER,PASS);
         System.out.println("PrimerDB connected");
@@ -59,7 +59,6 @@ public class HSqlManager {
     public HSqlManager(String url) throws IOException,
             ClassNotFoundException, SQLException, IllegalAccessException, InstantiationException {
         INSTANCE = ImportPhagelist.getInstance();
-//        Class.forName(JDBC_DRIVER_HSQL).newInstance();
         Class.forName(JDBC_DRIVER_H2).newInstance();
         conn = DriverManager.getConnection(url,USER,PASS);
         System.out.println("PrimerDB connected");
@@ -87,7 +86,6 @@ public class HSqlManager {
             InstantiationException, IllegalAccessException {
         dbInit();
         primerDBsetup();
-//        createAllDbs();
     }
 
     //Sets up DB and tables
@@ -99,11 +97,7 @@ public class HSqlManager {
                 " Sequence BIGINT NOT NULL, " +
                 " Strain VARCHAR(45) NOT NULL, " +
                 " Cluster VARCHAR(45) NOT NULL, " +
-                " Tm FLOAT NULL, " +
-                " GC FLOAT NULL, " +
-                " CommonP BOOLEAN NULL, " +
                 " UniqueP BOOLEAN NULL, " +
-                " Picked BOOLEAN NULL, " +
                 " Hairpin BOOLEAN NULL, "+
                 " PRIMARY KEY (id)) ");
         init.executeUpdate(" CREATE CACHED TABLE MatchedPrimers( " +
@@ -126,7 +120,7 @@ public class HSqlManager {
                 " PRIMARY KEY (id)) ");
         init.executeUpdate("SET WRITE_DELAY 20");
         init.executeUpdate("SET REFERENTIAL_INTEGRITY FALSE");
-        init.executeUpdate("SET UNDO_LOG 0");
+//        init.executeUpdate("SET UNDO_LOG 0");
 
         init.executeUpdate("CREATE INDEX a on primers(Cluster)");
         init.executeUpdate("CREATE INDEX b on primers(Strain)");
@@ -166,8 +160,8 @@ public class HSqlManager {
         stat.execute("SET AUTOCOMMIT FALSE;");
         stat.execute("SET LOG 0;");
         PreparedStatement st = db.prepareStatement("INSERT INTO Primers" +
-                "(Sequence,Strain,Cluster,Tm,GC,UniqueP,CommonP,Hairpin) " +
-                "VALUES(?,?,?,?,?,true,true,?)");
+                "(Sequence,Strain,Cluster,UniqueP,Hairpin) " +
+                "VALUES(?,?,?,true,?)");
         ResultSet call = stat.executeQuery("Select * From Phages;");
         List<String[]> phages = new ArrayList<>();
         while (call.next()) {
@@ -227,7 +221,8 @@ public class HSqlManager {
                     }
 
                 }
-                System.out.println(clustersName.get(z));
+                System.out.print("\r");
+                System.out.print(clustersName.get(z));
             }
             int count = 0;
 
@@ -250,6 +245,8 @@ public class HSqlManager {
                     }
                 }
             }
+            System.out.print("\r");
+            System.out.print("Strain "+x+" done!");
             System.out.print("Unique Count: ");
             System.out.println(count);
             System.out.print("Primer Count: ");
@@ -269,12 +266,7 @@ public class HSqlManager {
                         st.setLong(1, a);
                         st.setString(2, x);
                         st.setString(3, primerClust);
-
-                        st.setDouble(4, HSqlPrimerDesign.easytm(Encoding.twoBitDecode(a)));
-
-                        st.setDouble(5, HSqlPrimerDesign.gcContent(Encoding.twoBitDecode(a)));
-
-                        st.setBoolean(6, HSqlPrimerDesign.calcHairpin(Encoding.twoBitDecode(a), 4));
+                        st.setBoolean(4, HSqlPrimerDesign.calcHairpin(Encoding.twoBitDecode(a), 4));
                         st.addBatch();
                     } catch (SQLException e) {
                         e.printStackTrace();
@@ -295,7 +287,7 @@ public class HSqlManager {
 
 
 
-            System.out.println("Unique Updated");
+            System.out.println(bps+" Unique Updated");
             System.out.println((System.currentTimeMillis() - time) / Math.pow(10, 3) / 60);
         }
         stat.execute("SET AUTOCOMMIT TRUE ;");

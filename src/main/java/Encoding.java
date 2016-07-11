@@ -6,12 +6,17 @@ public class Encoding {
     final static long LEN_MASK =31L;
 
     public static void main(String[] args) {
-        long encoded = twoBitEncoding("ATGCATGCATGCATGCATGCATGCATGCATG");
+        long encoded = twoBitEncoding("TGACGAGCC");
+        long comp = reEncodeReverseComplementTwoBit(encoded);
         System.out.println(encoded);
         String decoded =twoBitDecode(encoded);
 //        String decoded =Long.toBinaryString(encoded);
         System.out.println(decoded);
+        System.out.println(comp);
+        String dec = twoBitDecode(comp);
+        System.out.println(dec);
     }
+
     public static long twoBitEncoding(String seq){
         long encoded = 0L;
         int curShift =5;
@@ -31,6 +36,32 @@ public class Encoding {
             curShift+=2;
         }
         return encoded;
+    }
+    public static long reEncodeReverseComplementTwoBit(long encoding) {
+        long length= encoding & LEN_MASK;
+        long newEncoding = 0L;
+        newEncoding = newEncoding | length;
+
+        for (int i=5;i<=62;i=i+2){
+            if((i-5)/2L==length){
+                break;
+            }
+                    //Only have the bits of the letter
+            long maskedLetter = encoding & (ENCODING_MASK << i);
+            long rcEncoded = maskedLetter >> i;
+            if(rcEncoded==0L) {
+                rcEncoded = 3L;
+            }else if (rcEncoded==1L) {
+                rcEncoded = 2L;
+            }else if (rcEncoded==2L) {
+                rcEncoded = 1L;
+            }else{
+                rcEncoded=0L;
+            }
+            newEncoding = (rcEncoded << (((int) length)+4)*2-i | newEncoding);
+        }
+
+        return newEncoding;
     }
     public static String twoBitDecode(long encoded){
         long len = encoded & LEN_MASK;

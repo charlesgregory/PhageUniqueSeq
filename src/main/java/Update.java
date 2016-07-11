@@ -29,8 +29,9 @@ import java.sql.SQLException;
 public class Update{
 //    static final String JDBC_DRIVER_HSQL = "org.hsqldb.jdbc.JDBCDriver";
     static final String JDBC_DRIVER_H2 = "org.h2.Driver";
-//    static final String DB_SERVER_URL ="jdbc:hsqldb:hsql://localhost/primerdbTest;ifexists=true";
-    static final String DB_SERVER_URL_H2 ="jdbc:h2:primerdbTest;MULTI_THREADED=1;FILE_LOCK=NO";
+//    static final String DB_SERVER_URL ="jdbc:hsqldb:hsql://localhost/primerdb;ifexists=true";
+    static final String DB_SERVER_URL_H2 ="jdbc:h2:primerdb;LOG=0;LOCK_MODE=0;CACHE_SIZE=65536;" +
+        "UNDO_LOG=0;WRITE_DELAY=10";
     static final String DB_URL_HSQL_C = "jdbc:hsqldb:file:database/primerdb;ifexists=true";
     public static Connection conn;
     private static final String USER = "SA";
@@ -56,20 +57,14 @@ public class Update{
                     System.gc();
                 }
             }else {
-//                HSqlManager.runNewBP(conn, Integer.valueOf(args[2]));
+                HSqlManager.primerAnalysis(conn, Integer.valueOf(args[2]));
             }
         }
         else if(args[1].equals("-pick")){
             HSqlPrimerDesign.locations(conn);
         }
-//        else if(args[1].equals("-match")){
-//            HSqlPrimerDesign.checker(conn,Integer.valueOf(args[2]));
-//        }
-        else if(args[1].equals("-check")){
-//            FixPhagelist.main(new String[0]);
-//            HSqlManager.runChecks(conn);
-        }else if(args[1].equals("-test")){
-//            Test.test(conn, 18);
+        else if(args[1].equals("-test")){
+            PrimerMatching.matchPrimers(conn);
         }
     }
 }

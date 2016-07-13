@@ -21,6 +21,7 @@ public class DBManager {
         i=0;
         count=0;
     }
+
     public void matchedPrimerSubmit(long primer1, long primer2, double[] frags, String cluster, String strain)
             throws SQLException, CompoundNotFoundException {
         DescriptiveStatistics stats = new DescriptiveStatistics(frags);
@@ -41,7 +42,7 @@ public class DBManager {
         if (i == 10000) {
             i = 0;
             matchPrimerInsert.executeBatch();
-            db.commit();
+//            db.commit();
             System.out.print("\r");
             System.out.print(count);
         }

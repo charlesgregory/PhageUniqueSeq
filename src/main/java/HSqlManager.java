@@ -1,3 +1,4 @@
+import com.nfsdb.journal.exceptions.JournalException;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 import org.biojava.nbio.core.exceptions.CompoundNotFoundException;
 import org.biojava.nbio.core.sequence.DNASequence;
@@ -73,7 +74,7 @@ public class HSqlManager {
     }
     //Main for Initial DB Build
     public static void main(String[] args) throws ClassNotFoundException,
-            SQLException, InstantiationException, IllegalAccessException, IOException, CompoundNotFoundException {
+            SQLException, InstantiationException, IllegalAccessException, IOException, CompoundNotFoundException, JournalException {
         HSqlManager db = new HSqlManager(DB_SERVER_URL_H2);
         db.dbBuild();
         if(args.length>1&&args[1].equals("-full")){
@@ -295,20 +296,8 @@ public class HSqlManager {
         st.close();
         stat.close();
     }
-    @Deprecated
-    public static void runNewMycoBP(Connection connection, int bps) throws IOException,
-            SQLException, InstantiationException, IllegalAccessException, ClassNotFoundException {
 
-        primerAnalysis(connection,bps);
 
-    }
-    @Deprecated
-    public static void runNewArthroBP(Connection connection, int bps) throws IOException,
-            SQLException, InstantiationException, IllegalAccessException, ClassNotFoundException {
-
-        primerAnalysis(connection,bps);
-
-    }
     public static void clearDatabase(Connection connection) throws SQLException {
         Connection db = connection;
         Statement stmt = db.createStatement();

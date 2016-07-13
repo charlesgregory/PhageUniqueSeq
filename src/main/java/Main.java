@@ -1,3 +1,4 @@
+import com.nfsdb.journal.exceptions.JournalException;
 import org.biojava.nbio.core.exceptions.CompoundNotFoundException;
 
 import java.io.IOException;
@@ -24,7 +25,7 @@ public class Main {
     //Controls entry to other mains through arguments to the command prompt
     //actions must be specified
     public static void main(String[] args) throws ClassNotFoundException, SQLException,
-            InstantiationException, IOException, IllegalAccessException, CompoundNotFoundException {
+            InstantiationException, IOException, IllegalAccessException, CompoundNotFoundException, JournalException {
         if(args.length==0){
             System.out.println("No actions specified\n" +
                     "options are:\n" +
@@ -38,6 +39,9 @@ public class Main {
         }
         else if(args[0].equals("-update")){
             Update.main(args);
+        }
+        else if(args[0].equals("-test")){
+            Test.main(args);
         }
         else {
             System.out.println("Incorrect action:"+args[0]+"\n" +

@@ -1,3 +1,4 @@
+import com.nfsdb.journal.exceptions.JournalException;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 import org.biojava.nbio.core.exceptions.CompoundNotFoundException;
@@ -18,6 +19,97 @@ import java.util.stream.Collectors;
  */
 @SuppressWarnings("Duplicates")
 public class PrimerMatching {
+    public static void matchPrimersNFSDB() throws ClassNotFoundException,
+            SQLException, InstantiationException, IllegalAccessException, IOException, CompoundNotFoundException, JournalException {
+        long time = System.nanoTime();
+//        String base = new File("").getAbsolutePath();
+        Map<List<String>, DNASequence> fastas = FastaManager.getMultiFasta();
+        PrintWriter log = new PrintWriter(new File("javalog.log"));
+        NFSDBManager db = new NFSDBManager();
+        db.makeDB();
+        List<String[]> phages = new ArrayList<>();
+        for(Phages p:db.readPhages()) {
+            String[] r = new String[3];
+            r[0]=p.getStrain();
+            r[1]=p.getCluster();
+            r[2]=p.getName();
+            phages.add(r);
+
+        }
+        Set<String> strains = phages.stream().map(y->y[0]).collect(Collectors.toSet());
+        for(String x:strains) {
+
+            /**
+             FOR EACH STRAIN
+             */
+
+            Set<String> clust = phages.stream().filter(y -> y[0].equals(x)).map(y -> y[1]).collect(Collectors.toSet());
+            String[] clusters = clust.toArray(new String[clust.size()]);
+            for (String z : clusters) {
+
+                /**
+                 FOR EACH CLUSTER
+                 */
+
+                System.out.println("Starting:" + z);
+                Map<Long,Double>primerTm = new HashMap<>();
+                Set<Long> primers = new HashSet<>();
+                Set<PrimerMatch> primerFragSet = new HashSet<>();
+//                Set<Matches> matched = new HashSet<>();
+                Set<String> clustphage = phages.stream()
+                        .filter(a -> a[0].equals(x) && a[1].equals(z)).map(a -> a[2])
+                        .collect(Collectors.toSet());
+                String[] clustphages = clustphage.toArray(new String[clustphage.size()]);
+
+
+                if (clustphages.length > 1) {
+
+                    /**
+                     GRAB PRIMERS
+                     */
+                    System.out.println(db.readPrimers().size());
+                    for(Primers p:db.readPrimers()) {
+                        if(p.getStrain().equals(x)&&p.getCluster().equals(z)&&(!p.isHairpin())) {
+                            long primer = p.getSequence();
+                            if (!primerTm.containsKey(primer)) {
+                                primerTm.put(primer, HSqlPrimerDesign.easytm(
+                                        Encoding.twoBitDecode(primer)));
+                            }
+                            long rprimer = Encoding.reEncodeReverseComplementTwoBit(primer);
+                            if (!primerTm.containsKey(rprimer)) {
+                                primerTm.put(rprimer, HSqlPrimerDesign.easytm(
+                                        Encoding.twoBitDecode(rprimer)));
+                            }
+                            primers.add(primer);
+//                    Map<String, Map<Long, Primer>> locations = Collections.synchronizedMap(
+//                            new HashMap<>());
+                        }
+                    }
+                    System.out.println(primers.size());
+                    Long[] primers2 = primers.toArray(new Long[primers.size()]);
+                    primerFragSet=match(x,z,clustphages[0],fastas,primers2,primerTm,primerFragSet,true);
+                    for (int i = 1; i < clustphages.length; i++) {
+                        /**
+                         * FOR EACH PHAGE
+                         */
+                        primerFragSet =match(x,z,clustphages[i],fastas,primers2,primerTm,primerFragSet,false);
+                    }
+                }
+                System.out.println((System.nanoTime() - time) / Math.pow(10, 9) / 60.0);
+                System.out.println("Matches Compiled");
+                System.out.println(primerFragSet.size());
+                System.out.println();
+                for(PrimerMatch m:primerFragSet){
+                    db.insertMatchedPrimer(m.foward,m.reverse,z,x,m.frags);
+                }
+                log.println(z);
+                log.flush();
+                System.gc();
+            }
+            System.out.println((System.nanoTime() - time) / Math.pow(10, 9) / 60.0);
+        }
+        System.out.println("Matches Submitted");
+    }
     public static void matchPrimers(Connection db) throws ClassNotFoundException,
             SQLException, InstantiationException, IllegalAccessException, IOException, CompoundNotFoundException {
         long time = System.nanoTime();

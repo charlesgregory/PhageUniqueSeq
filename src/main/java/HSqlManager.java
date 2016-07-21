@@ -32,6 +32,7 @@ import java.util.stream.Collectors;
  * Manages HSQL Database
  */
 @SuppressWarnings("Duplicates")
+@Deprecated
 public class HSqlManager {
     static final String JDBC_DRIVER_HSQL = "org.hsqldb.jdbc.JDBCDriver";
     static final String JDBC_DRIVER_H2 = "org.h2.Driver";
@@ -135,11 +136,11 @@ public class HSqlManager {
     //Inserts current strains, clusters and phages
     private void primerDBsetup() throws SQLException, IOException {
         System.out.println("Building DB");
+        FastaManager fastaManager= FastaManager.getInstance();
         PreparedStatement insertPhage = conn
                 .prepareStatement("INSERT INTO Phages" +
                         "(Name, Cluster, Strain) values(?,?,?);");
-        FastaManager.download();
-        Map<List<String>, DNASequence> fastaMap = FastaManager.getMultiFasta();
+        Map<List<String>, DNASequence> fastaMap = fastaManager.getMultiFasta();
         for (List<String> x:fastaMap.keySet()){
             insertPhage.setString(1,x.get(2));
             insertPhage.setString(2,x.get(1));
@@ -156,7 +157,8 @@ public class HSqlManager {
         System.out.println((System.currentTimeMillis()-time ) / Math.pow(10, 3)/60);
         time = System.currentTimeMillis();
         written = true;
-        Map<List<String>, DNASequence> fastas = FastaManager.getMultiFasta();
+        FastaManager fastaManager= FastaManager.getInstance();
+        Map<List<String>, DNASequence> fastas = fastaManager.getMultiFasta();
         Connection db = connection;
         Statement stat = db.createStatement();
         stat.execute("SET AUTOCOMMIT FALSE;");

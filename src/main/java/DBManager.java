@@ -8,6 +8,7 @@ import java.sql.SQLException;
 /**
  * Created by Thomas on 7/4/2016.
  */
+@Deprecated
 public class DBManager {
     int i;
     int count;

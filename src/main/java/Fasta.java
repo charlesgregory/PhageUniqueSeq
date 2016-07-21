@@ -30,6 +30,7 @@ import java.util.stream.IntStream;
  * Controls the fasta files. This class can download fasta files from phagesdb.org
  * using the phagelist. It can also parse the fasta sequence and split the fasta into pieces.
  */
+@Deprecated
 public class Fasta {
     //Reads fasta sequence
     public static String[] parse(String path){

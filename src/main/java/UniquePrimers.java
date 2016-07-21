@@ -17,8 +17,8 @@ public class UniquePrimers {
         NFSDBManager db=new NFSDBManager();
         db.makePhagesTable();
         System.out.println("Building DB");
-        FastaManager.download();
-        Map<List<String>, DNASequence> fastaMap = FastaManager.getMultiFasta();
+        FastaManager fastaManager=FastaManager.getInstance();
+        Map<List<String>, DNASequence> fastaMap = fastaManager.getMultiFasta();
         for (List<String> x:fastaMap.keySet()){
             db.insertPhage(x.get(2),x.get(1),x.get(0));
         }
@@ -30,7 +30,8 @@ public class UniquePrimers {
         long time = System.currentTimeMillis();
         System.out.println((System.currentTimeMillis()-time ) / Math.pow(10, 3)/60);
         time = System.currentTimeMillis();
-        Map<List<String>, DNASequence> fastas = FastaManager.getMultiFasta();
+        FastaManager fastaManager=FastaManager.getInstance();
+        Map<List<String>, DNASequence> fastas = fastaManager.getMultiFasta();
         List<String[]> phages = new ArrayList<>();
         for(Phages p:db.readPhages()) {
             String[] r = new String[3];
@@ -107,7 +108,7 @@ public class UniquePrimers {
                     }
                     if (primerInf.phageCount == clusters.get(primerClust).size()) {
 //                        primer.setValue(null);
-                        db.insertPrimer(primer.getKey(),clustersName.get(primerClust),x,HSqlPrimerDesign.calcHairpin(
+                        db.insertPrimer(primer.getKey(),clustersName.get(primerClust),x,PrimerDesign.calcHairpin(
                                 Encoding.twoBitDecode(primer.getKey()), 4));
                         count++;
                     }

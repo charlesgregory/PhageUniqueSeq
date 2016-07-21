@@ -46,6 +46,7 @@ import java.util.stream.Collectors;
  * Primer3 Bioinformatics 23(10):1289-91
  */
 @SuppressWarnings("Duplicates")
+@Deprecated
 public class HSqlPrimerDesign {
     static final String JDBC_DRIVER_HSQL = "org.hsqldb.jdbc.JDBCDriver";
     static final String DB_SERVER_URL ="jdbc:hsqldb:hsql://localhost/primerdb";
@@ -529,7 +530,8 @@ public class HSqlPrimerDesign {
             SQLException, InstantiationException, IllegalAccessException, IOException, CompoundNotFoundException {
         long time = System.nanoTime();
         String base = new File("").getAbsolutePath();
-        Map<List<String>, DNASequence> fastas = FastaManager.getMultiFasta();
+        FastaManager fastaManager= FastaManager.getInstance();
+        Map<List<String>, DNASequence> fastas = fastaManager.getMultiFasta();
         Connection db = connection;
         Statement stat = db.createStatement();
         PrintWriter log = new PrintWriter(new File("javalog.log"));

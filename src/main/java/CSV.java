@@ -20,6 +20,7 @@ import java.util.*;
  * Created by Charles Gregory on 12/8/2015. Controls .csv file writing and reading.
  */
 @SuppressWarnings("Duplicates")
+@Deprecated
 public class CSV {
     private static final String COMMA_DELIMITER = ",";
     //creates a directory

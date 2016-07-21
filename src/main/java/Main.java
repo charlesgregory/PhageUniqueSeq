@@ -36,13 +36,18 @@ public class Main {
                     "-design: Designs primers");
         }
         else if(args[0].equals("-build")){
-            HSqlManager.main(args);
+            UniquePrimers.primerDBsetup();
         }
         else if(args[0].equals("-update")){
             Update.main(args);
         }
         else if(args[0].equals("-test")){
             Test.main(args);
+        }
+        else if(args[1].equals("-full")){
+            Update.main(new String[]{"-test","-build"});
+            Update.main(new String[]{"-test","-new","18","25"});
+            Update.main(new String[]{"-test","-pick"});
         }
         else {
             System.out.println("Incorrect action:"+args[0]+"\n" +

@@ -5,6 +5,7 @@ import org.biojava.nbio.core.sequence.io.FastaReaderHelper;
 import java.io.File;
 import java.io.IOException;
 import java.net.URL;
+import java.text.SimpleDateFormat;
 import java.util.*;
 
 /**
@@ -12,14 +13,40 @@ import java.util.*;
  */
 @SuppressWarnings("Duplicates")
 public class FastaManager {
+    private Map<List<String>, DNASequence> fastas;
+    private static FastaManager instance;
 
-    public static void download() throws IOException {
+    private FastaManager() throws IOException {
+        download();
+    }
+
+    public static FastaManager getInstance() throws IOException {
+        if (instance == null) {
+            instance = new FastaManager();
+        }
+        return instance;
+    }
+    private void download() throws IOException {
         String base = new File("").getAbsolutePath();
         File file = new File(base+"/Fastas/Mycobacteriophages-All.fasta");
-        URL netPath = new URL("http://phagesdb.org/media/Mycobacteriophages-All.fasta");
-        FileUtils.copyURLToFile(netPath, file);
+        if(!fileCheck(file)) {
+            URL netPath = new URL("http://phagesdb.org/media/Mycobacteriophages-All.fasta");
+            FileUtils.copyURLToFile(netPath, file);
+        }
     }
-    public static Map<List<String>, DNASequence> getMultiFasta() throws IOException {
+    private static boolean fileCheck(File file){
+        SimpleDateFormat n = new SimpleDateFormat("MM/dd/yyyy");
+        String previous =n.format(file.lastModified());
+        String current = n.format(System.currentTimeMillis());
+        return current.equals(previous);
+    }
+    public Map<List<String>, DNASequence> getMultiFasta() throws IOException {
+        if(this.fastas==null) {
+            getFastas();
+        }
+        return fastas;
+    }
+    private void getFastas() throws IOException {
         ImportPhagelist list = ImportPhagelist.getInstance();
         List<String[]> rawlist = list.readFileAllStrains(list.path);
         List<String[]> rawlistSimple = list.readFileAllStrainsSimple(list.pathSimple);
@@ -82,6 +109,6 @@ public class FastaManager {
 //        }
 //        System.out.println(newFastaList.keySet().size());
 //        System.out.println(f.keySet().size());
-        return newFastaList;
+        fastas=newFastaList;
     }
 }

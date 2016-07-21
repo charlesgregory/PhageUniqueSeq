@@ -1,6 +1,8 @@
 
+import com.questdb.ex.JournalException;
 import org.biojava.nbio.core.exceptions.CompoundNotFoundException;
 
+import java.io.File;
 import java.io.IOException;
 import java.sql.Connection;
 import java.sql.DriverManager;
@@ -27,44 +29,30 @@ import java.sql.SQLException;
  */
 @SuppressWarnings("Duplicates")
 public class Update{
-//    static final String JDBC_DRIVER_HSQL = "org.hsqldb.jdbc.JDBCDriver";
-    static final String JDBC_DRIVER_H2 = "org.h2.Driver";
-//    static final String DB_SERVER_URL ="jdbc:hsqldb:hsql://localhost/primerdb;ifexists=true";
-    static final String DB_SERVER_URL_H2 ="jdbc:h2:primerdb;LOG=0;LOCK_MODE=0;CACHE_SIZE=65536;" +
-        "UNDO_LOG=0;WRITE_DELAY=10";
-    static final String DB_URL_HSQL_C = "jdbc:hsqldb:file:database/primerdb;ifexists=true";
-    public static Connection conn;
-    private static final String USER = "SA";
-    private static final String PASS = "";
+    public static void main(String[] args) throws ClassNotFoundException, IllegalAccessException,
+            InstantiationException, SQLException, IOException, CompoundNotFoundException, JournalException {
 
-    public static void main(String[] args) throws IOException, SQLException, ClassNotFoundException, IllegalAccessException, InstantiationException, CompoundNotFoundException {
-        Class.forName(JDBC_DRIVER_H2).newInstance();
-        conn = DriverManager.getConnection(DB_SERVER_URL_H2,USER,PASS);
-        if(args[1].equals("-meta")){
-//            HSqlManager.getClusterSizes(conn);
+        if(args[1].equals("-clear")){
+            //Incomplete
         }
-        else if(args[1].equals("-clear")){
-            HSqlManager.clearDatabase(conn);
-        }
-//        else if(args[1].equals("-build")){
-//            HSqlManager.main(args);
-//        }
         else if(args[1].equals("-new")){
+            NFSDBManager db=new NFSDBManager();
+            db.makePrimerTable();
             if(args[3]!=null){
                 for (int i =Integer.valueOf(args[2]);
                      i<=Integer.valueOf(args[3]);i++){
-                    HSqlManager.primerAnalysis(conn, i);
+                    UniquePrimers.primerAnalysis(i,db);
                     System.gc();
                 }
             }else {
-                HSqlManager.primerAnalysis(conn, Integer.valueOf(args[2]));
+                UniquePrimers.primerAnalysis(Integer.valueOf(args[2]),db);
             }
         }
-        else if(args[1].equals("-pick")){
-            HSqlPrimerDesign.locations(conn);
-        }
         else if(args[1].equals("-test")){
-            PrimerMatching.matchPrimers(conn);
+            TestNFSDB.main(new String[0]);
+        }
+        else if(args[1].equals("-pick")){
+            PrimerMatching.matchPrimersNFSDB();
         }
     }
 }

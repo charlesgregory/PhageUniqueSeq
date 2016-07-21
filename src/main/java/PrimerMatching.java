@@ -24,7 +24,8 @@ public class PrimerMatching {
             SQLException, InstantiationException, IllegalAccessException, IOException, CompoundNotFoundException, JournalException {
         long time = System.nanoTime();
 //        String base = new File("").getAbsolutePath();
-        Map<List<String>, DNASequence> fastas = FastaManager.getMultiFasta();
+        FastaManager fastaManager=FastaManager.getInstance();
+        Map<List<String>, DNASequence> fastas = fastaManager.getMultiFasta();
         PrintWriter log = new PrintWriter(new File("javalog.log"));
         NFSDBManager db = new NFSDBManager();
         db.makeDB();
@@ -73,12 +74,12 @@ public class PrimerMatching {
                         if(p.getStrain().equals(x)&&(!p.isHairpin())) {
                             long primer = p.getSequence();
                             if (!primerTm.containsKey(primer)) {
-                                primerTm.put(primer, HSqlPrimerDesign.easytm(
+                                primerTm.put(primer, PrimerDesign.easytm(
                                         Encoding.twoBitDecode(primer)));
                             }
                             long rprimer = Encoding.reEncodeReverseComplementTwoBit(primer);
                             if (!primerTm.containsKey(rprimer)) {
-                                primerTm.put(rprimer, HSqlPrimerDesign.easytm(
+                                primerTm.put(rprimer, PrimerDesign.easytm(
                                         Encoding.twoBitDecode(rprimer)));
                             }
                             primers.add(primer);
@@ -113,113 +114,7 @@ public class PrimerMatching {
         System.out.println("Matches Submitted");
         db.db.close();
     }
-    public static void matchPrimers(Connection db) throws ClassNotFoundException,
-            SQLException, InstantiationException, IllegalAccessException, IOException, CompoundNotFoundException {
-        long time = System.nanoTime();
-        String base = new File("").getAbsolutePath();
-        Map<List<String>, DNASequence> fastas = FastaManager.getMultiFasta();
-        Statement stat = db.createStatement();
-        PrintWriter log = new PrintWriter(new File("javalog.log"));
-        stat.execute("SET AUTOCOMMIT FALSE;");
-        DBManager insert = new DBManager(db);
-        ResultSet call = stat.executeQuery("Select * From Phages;");
-        List<String[]> phages = new ArrayList<>();
-        while (call.next()) {
-            String[] r = new String[3];
-            r[0]=call.getString("Strain");
-            r[1]=call.getString("Cluster");
-            r[2]=call.getString("Name");
-            phages.add(r);
-        }
-        call.close();
-        Set<String> strains = phages.stream().map(y->y[0]).collect(Collectors.toSet());
-        for(String x:strains) {
 
-            /**
-            FOR EACH STRAIN
-             */
-
-            Set<String> clust = phages.stream().filter(y -> y[0].equals(x)).map(y -> y[1]).collect(Collectors.toSet());
-            String[] clusters = clust.toArray(new String[clust.size()]);
-            for (String z : clusters) {
-
-                /**
-                FOR EACH CLUSTER
-                 */
-
-                System.out.println("Starting:" + z);
-                Map<Long,Double>primerTm = new HashMap<>();
-                Set<Long> primers = new HashSet<>();
-                Set<PrimerMatch> primerFragSet = new HashSet<>();
-//                Set<Matches> matched = new HashSet<>();
-                Set<String> clustphage = phages.stream()
-                        .filter(a -> a[0].equals(x) && a[1].equals(z)).map(a -> a[2])
-                        .collect(Collectors.toSet());
-                String[] clustphages = clustphage.toArray(new String[clustphage.size()]);
-
-
-                if (clustphages.length > 1) {
-
-                    /**
-                    GRAB PRIMERS
-                     */
-                    try {
-                        ResultSet resultSet = stat.executeQuery("Select * from primers" +
-                                " where Strain ='" + x + "' and Cluster ='" + z + "' and UniqueP = true" +
-                                " and Hairpin = false");
-                        while (resultSet.next()) {
-//                            Primer primer = new Primer(resultSet.getLong("Sequence"));
-                            long primer =resultSet.getLong("Sequence");
-//                            primer.setTm(HSqlPrimerDesign.easytm(Encoding.twoBitDecode(primer.getSequence())));
-//                            primers.add(primer);
-                            if(!primerTm.containsKey(primer)) {
-                                primerTm.put(primer, HSqlPrimerDesign.easytm(
-                                        Encoding.twoBitDecode(primer)));
-                            }
-                            long rprimer = Encoding.reEncodeReverseComplementTwoBit(primer);
-                            if(!primerTm.containsKey(rprimer)) {
-                                primerTm.put(rprimer, HSqlPrimerDesign.easytm(
-                                        Encoding.twoBitDecode(rprimer)));
-                            }
-                            primers.add(primer);
-                        }
-                        resultSet.close();
-                    } catch (SQLException e) {
-                        e.printStackTrace();
-                        System.out.println("Error occurred at " + x + " " + z);
-                    }
-                    System.out.println(primers.size());
-                    Long[] primers2 = primers.toArray(new Long[primers.size()]);
-//                    Map<String, Map<Long, Primer>> locations = Collections.synchronizedMap(
-//                            new HashMap<>());
-                    primerFragSet=match(x,z,clustphages[0],fastas,primers2,primerTm,primerFragSet,true);
-                    for (int i = 1; i < clustphages.length; i++) {
-                        /**
-                         * FOR EACH PHAGE
-                         */
-                        primerFragSet =match(x,z,clustphages[i],fastas,primers2,primerTm,primerFragSet,false);
-                    }
-                }
-                System.out.println((System.nanoTime() - time) / Math.pow(10, 9) / 60.0);
-                System.out.println("Matches Compiled");
-                System.out.println(primerFragSet.size());
-                System.out.println();
-                for(PrimerMatch m:primerFragSet){
-                    insert.matchedPrimerSubmit(m.foward,m.reverse,m.frags,z,x);
-                }
-                insert.matchPrimerInsertFinal();
-                log.println(z);
-                log.flush();
-                System.gc();
-            }
-            System.out.println((System.nanoTime() - time) / Math.pow(10, 9) / 60.0);
-        }
-
-        stat.execute("SET AUTOCOMMIT TRUE;");
-//        st.close();
-        stat.close();
-        System.out.println("Matches Submitted");
-    }
     public static Set<PrimerMatch> match(String x, String z, String phage, Map<List<String>,
             DNASequence> fastas, Long[] primers2, Map<Long, Double>primerTm,
                                          Set<PrimerMatch>primerFragSet, boolean first){

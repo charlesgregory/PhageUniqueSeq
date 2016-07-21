@@ -38,17 +38,16 @@ public class NFSDBManager {
 //        ;
         $(Primers.class)
                 .keyColumn("Cluster")//.txCountHint(100000000).recordCountHint(10000000).openFileTTL(1,TimeUnit.DAYS)
-                .keyColumn("Strain")
                 .$sym("Cluster").index().size(60).noCache()
                 //.txCountHint(100000000).recordCountHint(10000000).openFileTTL(1,TimeUnit.DAYS)
-                .$sym("Strain").index().size(60).noCache()
+//                .$sym("Strain").index().size(60).noCache()
         ;
         $(MatchedPrimers.class)
                 .keyColumn("Cluster")//.txCountHint(100000000).recordCountHint(10000000).openFileTTL(1,TimeUnit.DAYS)
-                .keyColumn("Strain")
+//                .keyColumn("Strain")
                 .$sym("Cluster").index().size(60).noCache()
                 //.txCountHint(100000000).recordCountHint(10000000).openFileTTL(1,TimeUnit.DAYS)
-                .$sym("Strain").index().size(60).noCache()
+//                .$sym("Strain").index().size(60).noCache()
         ;
     }};
     public NFSDBManager() throws JournalException {

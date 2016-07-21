@@ -123,17 +123,6 @@ public class UniquePrimers {
             System.out.println(count);
             System.out.print("Primer Count: ");
             System.out.println(primers.size());
-
-//            for (Long a : primers.keySet()) {
-//                UniquePrimers.Primer primerInf = primers.get(a);
-//                if (primerInf != null) {
-//                    String primerClust = "";
-//                    for (int cluster : primerInf.clusters) {
-//                        primerClust = clustersName.get(cluster);
-//                    }
-//                    db.insertPrimer(a,primerClust,x,HSqlPrimerDesign.calcHairpin(Encoding.twoBitDecode(a), 4));
-//                }
-//            }
             System.out.println(bps+" Unique Updated");
             System.out.println((System.currentTimeMillis() - time) / Math.pow(10, 3) / 60);
         }

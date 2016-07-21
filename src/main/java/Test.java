@@ -13,14 +13,9 @@ public class Test {
             InstantiationException, SQLException, IOException, CompoundNotFoundException, JournalException {
 
         if(args[1].equals("-meta")){
-//            HSqlManager.getClusterSizes();
         }
         else if(args[1].equals("-clear")){
-//            HSqlManager.clearDatabase();
         }
-//        else if(args[1].equals("-build")){
-//            HSqlManager.main(args);
-//        }
         else if(args[1].equals("-new")){
             NFSDBManager db=new NFSDBManager();
             db.makePrimerTable();

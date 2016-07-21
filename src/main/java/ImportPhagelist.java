@@ -39,10 +39,15 @@ public class ImportPhagelist {
     private ImportPhagelist() throws IOException {
         String base = new File("").getAbsolutePath();
         File file = new File(base+"\\Fastas");
-        CSV.makeDirectory(file);
+        makeDirectory(file);
         this.path =Download();
         this.pathSimple = DownloadSimple();
 //        getStrains(path);
+    }
+    private static void makeDirectory(File file){
+        if(!file.exists()){
+            file.mkdir();
+        }
     }
 
     public static ImportPhagelist getInstance() throws IOException {
@@ -195,26 +200,5 @@ public class ImportPhagelist {
         FileUtils.copyURLToFile(netPath, file);
         return file.toString();
     }
-    @Deprecated
-    public void parseAllPhagePrimers(int bps) throws IOException {
-        this.readFileAll(this.path)
-                .stream().forEach(x -> {
-            try {
-                CSV.writeDataCSV(x[1], Fasta.processPrimers(x[1], bps),bps);
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        });
-    }
-    @Deprecated
-    public void parseAllPhages(int bps) throws IOException {
-        this.readFileAll(this.path)
-                .stream().forEach(x -> {
-            try {
-                CSV.writeDataCSV(x[1], Fasta.process(x[1], bps),bps);
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        });
-    }
+
 }

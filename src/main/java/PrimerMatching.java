@@ -1,4 +1,5 @@
-import com.nfsdb.journal.exceptions.JournalException;
+//import com.nfsdb.journal.exceptions.JournalException;
+import com.questdb.ex.JournalException;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 import org.biojava.nbio.core.exceptions.CompoundNotFoundException;
@@ -67,9 +68,9 @@ public class PrimerMatching {
                     /**
                      GRAB PRIMERS
                      */
-                    System.out.println(db.readPrimers().size());
-                    for(Primers p:db.readPrimers()) {
-                        if(p.getStrain().equals(x)&&p.getCluster().equals(z)&&(!p.isHairpin())) {
+                    System.out.println(db.readPrimers(z).size());
+                    for(Primers p:db.readPrimers(z)) {
+                        if(p.getStrain().equals(x)&&(!p.isHairpin())) {
                             long primer = p.getSequence();
                             if (!primerTm.containsKey(primer)) {
                                 primerTm.put(primer, HSqlPrimerDesign.easytm(
@@ -105,10 +106,12 @@ public class PrimerMatching {
                 log.println(z);
                 log.flush();
                 System.gc();
+                db.insertMatchedPrimerCommit();
             }
             System.out.println((System.nanoTime() - time) / Math.pow(10, 9) / 60.0);
         }
         System.out.println("Matches Submitted");
+        db.db.close();
     }
     public static void matchPrimers(Connection db) throws ClassNotFoundException,
             SQLException, InstantiationException, IllegalAccessException, IOException, CompoundNotFoundException {

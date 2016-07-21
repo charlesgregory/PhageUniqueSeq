@@ -1,4 +1,5 @@
-import com.nfsdb.journal.exceptions.JournalException;
+//import com.nfsdb.journal.exceptions.JournalException;
+import com.questdb.ex.JournalException;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 import org.biojava.nbio.core.exceptions.CompoundNotFoundException;
 import org.biojava.nbio.core.sequence.DNASequence;

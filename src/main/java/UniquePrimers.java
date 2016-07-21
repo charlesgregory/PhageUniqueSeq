@@ -1,4 +1,6 @@
-import com.nfsdb.journal.exceptions.JournalException;
+//import com.nfsdb.journal.exceptions.JournalException;
+import com.questdb.ex.JournalException;
+import org.apache.commons.lang3.SystemUtils;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 import org.biojava.nbio.core.sequence.DNASequence;
 
@@ -13,7 +15,7 @@ import java.util.stream.Collectors;
 public class UniquePrimers {
     public static void primerDBsetup() throws SQLException, IOException, JournalException {
         NFSDBManager db=new NFSDBManager();
-        db.makeDB();
+        db.makePhagesTable();
         System.out.println("Building DB");
         FastaManager.download();
         Map<List<String>, DNASequence> fastaMap = FastaManager.getMultiFasta();
@@ -21,6 +23,8 @@ public class UniquePrimers {
             db.insertPhage(x.get(2),x.get(1),x.get(0));
         }
         System.out.println("DB Built");
+        db.insertPhageCommit();
+        db.db.close();
     }
     public static void primerAnalysis( int bps, NFSDBManager db)throws IOException, JournalException {
         long time = System.currentTimeMillis();
@@ -85,7 +89,7 @@ public class UniquePrimers {
 
                 }
                 System.out.print("\r");
-                System.out.print(clustersName.get(z));
+                System.out.print(clustersName.get(z)+"                             ");
             }
             int count = 0;
 
@@ -101,11 +105,15 @@ public class UniquePrimers {
                     for (int cluster : primerInf.clusters) {
                         primerClust = cluster;
                     }
-                    if (primerInf.phageCount != clusters.get(primerClust).size()) {
-                        primer.setValue(null);
-                    } else {
+                    if (primerInf.phageCount == clusters.get(primerClust).size()) {
+//                        primer.setValue(null);
+                        db.insertPrimer(primer.getKey(),clustersName.get(primerClust),x,HSqlPrimerDesign.calcHairpin(
+                                Encoding.twoBitDecode(primer.getKey()), 4));
                         count++;
                     }
+//                    } else {
+//                        count++;
+//                    }
                 }
             }
             System.out.print("\r");
@@ -114,21 +122,22 @@ public class UniquePrimers {
             System.out.println(count);
             System.out.print("Primer Count: ");
             System.out.println(primers.size());
-            i = 0;
 
-            for (Long a : primers.keySet()) {
-                UniquePrimers.Primer primerInf = primers.get(a);
-                if (primerInf != null) {
-                    String primerClust = "";
-                    for (int cluster : primerInf.clusters) {
-                        primerClust = clustersName.get(cluster);
-                    }
-                    db.insertPrimer(a,primerClust,x,HSqlPrimerDesign.calcHairpin(Encoding.twoBitDecode(a), 4));
-                }
-            }
+//            for (Long a : primers.keySet()) {
+//                UniquePrimers.Primer primerInf = primers.get(a);
+//                if (primerInf != null) {
+//                    String primerClust = "";
+//                    for (int cluster : primerInf.clusters) {
+//                        primerClust = clustersName.get(cluster);
+//                    }
+//                    db.insertPrimer(a,primerClust,x,HSqlPrimerDesign.calcHairpin(Encoding.twoBitDecode(a), 4));
+//                }
+//            }
             System.out.println(bps+" Unique Updated");
             System.out.println((System.currentTimeMillis() - time) / Math.pow(10, 3) / 60);
         }
+        db.insertPrimerCommit();
+        db.db.close();
     }
 
 

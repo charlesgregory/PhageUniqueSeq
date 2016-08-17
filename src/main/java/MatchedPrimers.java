@@ -18,7 +18,9 @@ public class MatchedPrimers {
 //            " PRIMARY KEY (id)) ");
     private long Primer;
     private long PrimerMatch;
-    private double[] frags;
+//    private double[] frags;
+    private double mean;
+    private double standardDev;
     private String Strain;
     private String Cluster;
 
@@ -38,13 +40,13 @@ public class MatchedPrimers {
         PrimerMatch = primerMatch;
     }
 
-    public double[] getFrags() {
-        return frags;
-    }
+//    public double[] getFrags() {
+//        return frags;
+//    }
 
-    public void setFrags(double[] frags) {
-        this.frags = frags;
-    }
+//    public void setFrags(double[] frags) {
+//        this.frags = frags;
+//    }
 
     public String getStrain() {
         return Strain;
@@ -62,12 +64,29 @@ public class MatchedPrimers {
         Cluster = cluster;
     }
 
+    public double getMean() {
+        return mean;
+    }
+
+    public void setMean(double mean) {
+        this.mean = mean;
+    }
+
+    public double getStandardDev() {
+        return standardDev;
+    }
+
+    public void setStandardDev(double standardDev) {
+        this.standardDev = standardDev;
+    }
+
     @Override
     public String toString() {
         return "MatchedPrimers{" +
                 "Primer=" + Primer +
                 ", PrimerMatch=" + PrimerMatch +
-                ", frags=" + Arrays.toString(frags) +
+                ", mean=" + mean +
+                ", standardDev=" + standardDev +
                 ", Strain='" + Strain + '\'' +
                 ", Cluster='" + Cluster + '\'' +
                 '}';

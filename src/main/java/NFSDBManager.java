@@ -110,7 +110,8 @@ public class NFSDBManager {
         DescriptiveStatistics stats = new DescriptiveStatistics(frags);
         p.setPrimer(primer);
         p.setPrimerMatch(rprimer);
-        p.setFrags(frags);
+        p.setMean(stats.getMean());
+        p.setStandardDev(stats.getStandardDeviation());
         p.setStrain(strain);
         p.setCluster(cluster);
         matchedPrimersTable.append(p);

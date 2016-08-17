@@ -32,7 +32,8 @@ public class Test {
         else if(args[1].equals("-test")){
 //            NFSDBManager db=new NFSDBManager();
 //            db.test();
-            TestNFSDB.main(new String[0]);
+//            TestNFSDB.main(new String[0]);
+            TestNFSDB.testmatches();
         }
         else if(args[1].equals("-build")){
             UniquePrimers.primerDBsetup();

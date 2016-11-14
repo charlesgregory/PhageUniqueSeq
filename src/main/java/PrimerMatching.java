@@ -19,6 +19,8 @@ import java.util.stream.Collectors;
 public class PrimerMatching {
     static Set<PrimerMatch> primerFragSet = new HashSet<>();
     static Map<PrimerMatch,Double[]>matchFrags= new HashMap<>();
+    static int phagecount;
+    static int clustsize;
     public static void matchPrimersNFSDB() throws ClassNotFoundException,
             SQLException, InstantiationException, IllegalAccessException, IOException, CompoundNotFoundException, JournalException {
         long time = System.nanoTime();
@@ -89,14 +91,18 @@ public class PrimerMatching {
                     }
                     System.out.println(primers.size());
                     System.out.println(clustphages.length);
+                    clustsize=clustphages.length;
+                    phagecount=0;
                     Long[] primers2 = primers.toArray(new Long[primers.size()]);
                     match(x,z,clustphages[0],fastas,primers2,primerTm, true);
+                    phagecount++;
                     for (int i = 1; i < clustphages.length; i++) {
                         /**
                          * FOR EACH PHAGE
                          */
                         match(x,z,clustphages[i],fastas,primers2,primerTm,false);
-                        System.out.println(primerFragSet.size());
+                        phagecount++;
+//                        System.out.println(primerFragSet.size());
                     }
                 }
                 System.out.println((System.nanoTime() - time) / Math.pow(10, 9) / 60.0);
@@ -205,7 +211,7 @@ public class PrimerMatching {
         int index =0;
 //        int count =0;
         Map<PrimerMatch,PrimerMatch> primerMatchSet = new HashMap<>();
-        Map<PrimerMatch, Double[]> matchFrags2 = new HashMap<>();
+        Map<PrimerMatch, Double> matchFrags2 = new HashMap<>();
         Set<PrimerMatch> remove = new HashSet<>();
         int b,frag;
         PrimerMatch match;
@@ -230,7 +236,7 @@ public class PrimerMatching {
                     match = new PrimerMatch(pF,pR);
                     if(!primerMatchSet.containsKey(match)){
                         primerMatchSet.put(match,match);
-                        matchFrags2.put(match,new Double[]{frag+0.0});
+                        matchFrags2.put(match,frag+0.0);
                     }else{
                         remove.add(match);
                     }
@@ -251,24 +257,29 @@ public class PrimerMatching {
         }
         if(first){
             primerFragSet=primerMatchSet.keySet();
-            matchFrags=matchFrags2;
+            primerMatchSet.keySet().forEach(m->{
+                Double[] arr = new Double[clustsize];
+                arr[phagecount]=matchFrags2.get(m);
+                matchFrags.put(m,arr);
+            });
         }else{
             primerMatchSet.keySet().forEach(m->{
                 if(primerFragSet.contains(m)){
                     Double[] arr = matchFrags.get(m);
-                    arr=Arrays.copyOf(arr,arr.length+1);
-                    arr[arr.length-1]=matchFrags2.get(m)[0];
+                    arr[phagecount]=matchFrags2.get(m);
                     matchFrags.replace(m,arr);
                 }
                 else {
                     remove.add(m);
                 }
             });
-//            for(PrimerMatch m:remove){
-//                primerMatchSet.remove(m);
-//            }
+            for(PrimerMatch m:remove){
+                primerMatchSet.remove(m);
+            }
             primerFragSet=primerMatchSet.keySet();
         }
+//        primerMatchSet.clear();
+//        matchFrags2.clear();
 
     }
     private static class PrimerMatch{

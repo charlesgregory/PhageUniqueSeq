@@ -49,7 +49,7 @@ public class Update{
             }
         }
         else if(args[1].equals("-test")){
-            TestNFSDB.main(new String[0]);
+//            TestNFSDB.main(new String[0]);
         }
         else if(args[1].equals("-pick")){
             PrimerMatching.matchPrimersNFSDB();
